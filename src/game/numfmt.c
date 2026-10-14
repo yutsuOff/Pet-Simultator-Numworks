@@ -75,3 +75,18 @@ char *numfmt(double value, char *buf) {
   *p = 0;
   return buf;
 }
+
+char *pctfmt(double fraction, char *buf) {
+  double p = fraction * 100.0;
+  int decimals = p >= 10.0 ? 1 : p >= 0.1 ? 2 : 3;
+  unsigned scale = decimals == 1 ? 10 : decimals == 2 ? 100 : 1000;
+  unsigned v = (unsigned)(p * scale + 0.5);
+  char *q = put_uint(buf, v / scale);
+  *q++ = '.';
+  unsigned frac = v % scale;
+  for (unsigned d = scale / 10; d > 1 && frac < d; d /= 10) *q++ = '0';
+  q = put_uint(q, frac);
+  *q++ = '%';
+  *q = 0;
+  return buf;
+}

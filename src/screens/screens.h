@@ -10,6 +10,7 @@ enum {
   SCREEN_REDRAW_CONTENT = 1, /* only the content area changed */
   SCREEN_REDRAW_ALL = 2,     /* bars changed too (currencies, zone...) */
   SCREEN_FOCUS_TABS = 4,     /* the player moved down past the last row */
+  SCREEN_USED_BACK = 8,      /* the screen handled the Back key (closing a popup) */
 };
 
 typedef struct {

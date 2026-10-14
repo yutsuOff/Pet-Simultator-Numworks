@@ -1,6 +1,6 @@
 /* PC backend: renders into a memory framebuffer and replays a key script.
  *
- *   petsim-host [--out DIR] "SCRIPT"
+ *   petsim-host [--out DIR] [--rich] "SCRIPT"
  *
  * SCRIPT is a space-separated list of tokens, one per frame:
  *   L R U D OK BACK HOME SHIFT TOOLBOX 0-9   press the key for one frame (then release one frame)
@@ -25,6 +25,7 @@ static int wait_frames;
 static uint64_t current_keys;
 static bool release_frame;
 static const char *out_dir = "output/screens";
+static bool rich;
 
 extern int app_main(void);
 
@@ -78,6 +79,8 @@ void platform_push_rect(int x, int y, int w, int h, const uint16_t *pixels) {
 
 uint64_t platform_keys(void) { return current_keys; }
 
+bool platform_debug_rich(void) { return rich; }
+
 uint32_t platform_millis(void) { return now_ms; }
 
 uint32_t platform_random(void) {
@@ -118,9 +121,9 @@ bool platform_end_frame(void) {
 int main(int argc, char **argv) {
   static char *storage[4096];
   int i = 1;
-  if (argc > 2 && strcmp(argv[1], "--out") == 0) {
-    out_dir = argv[2];
-    i = 3;
+  for (; i < argc && strncmp(argv[i], "--", 2) == 0; i++) {
+    if (strcmp(argv[i], "--rich") == 0) rich = true;
+    else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) out_dir = argv[++i];
   }
   for (; i < argc; i++) {
     char *copy = strdup(argv[i]);

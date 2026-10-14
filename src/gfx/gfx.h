@@ -44,6 +44,11 @@ int gfx_text_width(const font_t *f, const char *s);
 void gfx_sprite(const sprite_t *s, int x, int y);
 /* Draws the sprite in a single color (silhouette of undiscovered pets, shadows). */
 void gfx_sprite_tint(const sprite_t *s, int x, int y, color_t c);
+/* Half size (smooth 2x2 average): 24x24 icons drawn from the 48x48 pet and egg images. */
+void gfx_sprite_half(const sprite_t *s, int x, int y);
+void gfx_sprite_half_tint(const sprite_t *s, int x, int y, color_t c);
+/* Integer zoom (nearest pixel), for the hatching reveal. */
+void gfx_sprite_scaled(const sprite_t *s, int x, int y, int scale);
 
 color_t gfx_mix(color_t a, color_t b, int alpha /* 0..255, weight of b */);
 

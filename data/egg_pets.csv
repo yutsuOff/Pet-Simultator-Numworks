@@ -1,0 +1,183 @@
+egg,pet,chance_percent
+1,Dog,25
+1,Corgi,25
+1,Cat,25
+1,Axolotl,25
+2,Bunny,64.5
+2,Chick,29
+2,Dalmatian,6.45
+3,Dalmatian,38
+3,Ducky,38
+3,Monkey,19
+3,Parrot,5.2
+4,Elephant,71.5
+4,Parrot,25
+4,Tiger,3.4
+5,Squirrel,68
+5,Bear,27.5
+5,Tiger,4.75
+6,Lamb,45.5
+6,Raccoon,32
+6,Fox,23
+7,Bee,63
+7,Turkey,31.5
+7,Scarecrow Cat,5.4
+8,Piggy,58
+8,Scarecrow Cat,38
+8,Llama,4.1
+9,White Bunny,62.5
+9,Chicken,37.5
+9,Flamingo,0.16
+10,Cow,89.5
+10,Flamingo,6.1
+10,Ladybug,4.2
+11,Turtle,49.5
+11,Ladybug,32.5
+11,Hedgehog,13
+11,Ugly Duckling,5.15
+12,Ugly Duckling,62
+12,Froggy,31
+12,Umbrella Dog,6.95
+13,Umbrella Dog,48
+13,Umbrella Cat,48
+13,Platypus,3.45
+13,Dragon,??
+14,Platypus,68
+14,Firefly,27.5
+14,Dragon,4.75
+15,Mining Dog,71
+15,Happy Rock,28.5
+15,Demolition Cat,0.725
+16,Sapphire Carbuncle,51
+16,Demolition Cat,35.5
+16,Emerald Carbuncle,14
+16,Willow Wisp,??
+17,Bat,60
+17,Green Cobra,36
+17,Willow Wisp,4.2
+18,Black Bear,62
+18,Griffin,37
+18,Guilded Raven,0.79
+19,Guilded Raven,39.5
+19,Black Widow,56.5
+19,Shadow Griffin,4
+19,Agony,??
+20,Slime,40
+20,Cyclops,40
+20,Shadow Griffin,16.5
+20,Agony,3.55
+21,Mushroom Raccoon,56.5
+21,Enchanted Cat,28.5
+21,Enchanted Elephant,14.5
+21,Enchanted Deer,0.72
+22,Purple Cobra,64.5
+22,Enchanted Deer,31
+22,Butterfly,4.6
+23,Butterfly,57.5
+23,Peacock,37.5
+23,Bobcat,4.7
+23,Mystical Fox,??
+24,Bobcat,49.5
+24,Chimpanzee,32.5
+24,Panther,15.5
+24,Mystical Fox,2.7
+25,Sloth,58.5
+25,Lion,38
+25,Jaguar,3.15
+26,Lemur,74.5
+26,Jaguar,22.5
+26,Crocodile,2.7
+26,King Cobra,0.12
+27,Gecko,60
+27,Hippo,30
+27,Crocodile,9.7
+28,Seal,72
+28,Dolphin,25.5
+28,Pufferfish,2.65
+28,Axolotuus,??
+29,Blue Fish,63
+29,Green Fish,31.5
+29,Goldfish,3.75
+29,Axolotuus,1.95
+30,Goldfish,58.5
+30,Jellyfish,29.5
+30,Mantis Shrimp,9.5
+30,Kraken,2.35
+31,Kraken,77.5
+31,Stingray,19.5
+31,Hydra,2.8
+32,Mermaid Cat,72.5
+32,Poseidon Dog,25.5
+32,Poseidon Corgi,2.2
+33,Moray Eel,74.5
+33,Whale Shark,22.5
+33,Shark,2.7
+33,Midnight Axolotl,??
+34,Flower Gecko,77.5
+34,Shark,19.5
+34,Midnight Axolotl,2.9
+34,Pineapple Cat,0.15
+35,Luau Cat,78
+35,Luau Seal,20
+35,Pineapple Cat,2.4
+35,Tiki Dominus,??
+36,Sandcastle Cat,78
+36,Sandcastle Dog,20
+36,Fish in a Bucket,2.4
+36,Tiki Dominus,0.1
+37,Turtle in a Bucket,79
+37,Fish in a Bucket,18.5
+37,Sailor Shark,2.4
+37,Hydra Axolotl,??
+38,Sailor Shark,93
+38,Pirate Cat,4.6
+38,Sailor Dolphin,2.15
+38,Hydra Axolotl,0.135
+39,Pirate Cat,83
+39,Pirate Panda,13
+39,Pirate Parrot,2.55
+39,African Wild Dog,1.4
+40,Giraffe,77
+40,Zebra,16
+40,African Wild Dog,7.25
+40,Cheetah,0.15
+41,Gazelle,85.5
+41,Quokka,13.5
+41,Cheetah,0.87
+41,Rhino,0.22
+42,Gorilla,83
+42,Quokka,15.5
+42,Rhino,1.55
+43,Rhino,82.5
+43,Armadillo,14.5
+43,Kangaroo,1.85
+43,Hyena,0.945
+44,Dino,82.5
+44,Hyena,15.5
+44,Spitting Dino,2.25
+44,Fossil Dragon,0.16
+44,Dino Cat,??
+45,Desert Cat,83.5
+45,Camel,14.5
+45,Scorpion,1.95
+45,Sphinx,??
+46,Scorpion,78
+46,Desert Ram,18.5
+46,Puma,1.95
+46,Honey Badger,1.7
+47,Puma,83
+47,Horse,13
+47,Bull,2.3
+47,Yee-haw Dog,1.85
+48,Bull,86
+48,Goat,12.5
+48,Bison,1.6
+49,Deer,84
+49,Moose,13
+49,Snow Ram,2.4
+49,Fawn,0.145
+50,Snow Ram,67
+50,Snow Dog,20.5
+50,Snow Cat,10.5
+50,Snow Leopard,1.85
+50,Narwhal,??

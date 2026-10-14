@@ -52,6 +52,23 @@ def palettize(img):
     return [(0, 0)] + colors, pixels
 
 
+def sprite_c(name, img, storage=""):
+    """C source of one sprite. Returns (lines, bytes of flash)."""
+    palette, pixels = palettize(img)
+    c = [f"static const uint16_t {name}_pal[{len(palette)}] = {{"
+         + ",".join(f"0x{p[0]:04x}" for p in palette) + "};",
+         f"static const uint8_t {name}_alpha[{len(palette)}] = {{"
+         + ",".join(str(p[1]) for p in palette) + "};",
+         f"static const uint8_t {name}_px[{len(pixels)}] = {{"]
+    for i in range(0, len(pixels), 32):
+        c.append("  " + ",".join(str(v) for v in pixels[i:i + 32]) + ",")
+    c.append("};")
+    c.append(f"{storage}const sprite_t {name} = {{{img.width}, {img.height}, {len(palette)}, "
+             f"{name}_pal, {name}_alpha, {name}_px}};")
+    c.append("")
+    return c, len(pixels) + len(palette) * 3
+
+
 def main():
     listing = sys.argv[1] if len(sys.argv) > 1 else "assets/sprites.txt"
     base = sys.argv[2] if len(sys.argv) > 2 else "src/generated/sprites"
@@ -71,21 +88,10 @@ def main():
          '#include "../gfx/gfx.h"', ""]
     total = 0
     for name, path, size in entries:
-        img = load(path, size)
-        palette, pixels = palettize(img)
-        c.append(f"static const uint16_t {name}_pal[{len(palette)}] = {{"
-                 + ",".join(f"0x{p[0]:04x}" for p in palette) + "};")
-        c.append(f"static const uint8_t {name}_alpha[{len(palette)}] = {{"
-                 + ",".join(str(p[1]) for p in palette) + "};")
-        c.append(f"static const uint8_t {name}_px[{len(pixels)}] = {{")
-        for i in range(0, len(pixels), 32):
-            c.append("  " + ",".join(str(v) for v in pixels[i:i + 32]) + ",")
-        c.append("};")
-        c.append(f"const sprite_t {name} = {{{img.width}, {img.height}, {len(palette)}, "
-                 f"{name}_pal, {name}_alpha, {name}_px}};")
-        c.append("")
+        lines, size = sprite_c(name, load(path, size))
+        c += lines
         h.append(f"extern const sprite_t {name};")
-        total += len(pixels) + len(palette) * 3
+        total += size
     h += ["", "#endif", ""]
     open(base + ".c", "w").write("\n".join(c))
     open(base + ".h", "w").write("\n".join(h))

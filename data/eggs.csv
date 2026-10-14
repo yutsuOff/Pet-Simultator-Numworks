@@ -1,0 +1,51 @@
+egg,name,area,cost_coins,cost_wiki,image
+1,Cracked Egg,1,90,90 Coins,eggs/cracked_egg.png
+2,Spotted Egg,1,150,150 Coins,eggs/spotted_egg.png
+3,Paw Egg,2,250,250 Coins,eggs/paw_egg.png
+4,Grass Egg,3,650,650 Coins,eggs/grass_egg.png
+5,Wood Egg,4,1500,1500 Coins,eggs/wood_egg.png
+6,Pumpkin Egg,5,4000,4000 Coins,eggs/pumpkin_egg.png
+7,Hive Egg,5,6000,6000 Coins,eggs/hive_egg.png
+8,Acorn Egg,6,9500,9500 Coins,eggs/acorn_egg.png
+9,Blossom Egg,7,20000,20000 Coins,eggs/blossom_egg.png
+10,Corgi Egg,8,45000,45000 Coins,eggs/corgi_egg.png
+11,Cat Egg,8,70000,70000 Coins,eggs/cat_egg.png
+12,Dog Egg,9,100000,100000 Coins,eggs/dog_egg.png
+13,Dragon Egg,10,200000,200000 Coins,eggs/dragon_egg.png
+14,Rock Egg,10,350000,350000 Coins,eggs/rock_egg.png
+15,Geode Egg,11,500000,500000 Coins,eggs/geode_egg.png
+16,Hut Egg,12,1000000,1 Gold Bars,eggs/hut_egg.png
+17,Grave Egg,12,1500000,1 Gold Bars + 500000 Coins,eggs/grave_egg.png
+18,Spike Egg,13,2000000,2 Gold Bars,eggs/spike_egg.png
+19,Sprout Egg,14,4500000,4 Gold Bars + 500000 Coins,eggs/sprout_egg.png
+20,Mushroom Egg,14,6500000,6 Gold Bars + 500000 Coins,eggs/mushroom_egg.png
+21,Spirit Egg,15,9000000,9 Gold Bars,eggs/spirit_egg.png
+22,Crimson Egg,16,20000000,20 Gold Bars,eggs/crimson_egg.png
+23,Overgrown Egg,17,40000000,40 Gold Bars,eggs/overgrown_egg.png
+24,Mossy Egg,18,80000000,80 Gold Bars,eggs/mossy_egg.png
+25,Jungle Egg,18,100000000,100 Gold Bars,eggs/jungle_egg.png
+26,Sandcastle Egg,19,150000000,150 Gold Bars,eggs/sandcastle_egg.png
+27,Palm Tree Egg,19,250000000,250 Gold Bars,eggs/palm_tree_egg.png
+28,Beach Ball Egg,20,350000000,350 Gold Bars,eggs/beach_ball_egg.png
+29,Coral Egg,21,700000000,700 Gold Bars,eggs/coral_egg.png
+30,Anchor Egg,22,1500000000,1500 Gold Bars,eggs/anchor_egg.png
+31,Atlantis Egg,23,3000000000,3000 Gold Bars,eggs/atlantis_egg.png
+32,Tropical Egg,24,6000000000,6000 Gold Bars,eggs/tropical_egg.png
+33,Beach Egg,24,8500000000,8500 Gold Bars,eggs/beach_egg.png
+34,Coconut Egg,25,10000000000,10000 Gold Bars,eggs/coconut_egg.png
+35,Tiki Egg,26,25000000000,25000 Gold Bars,eggs/tiki_egg.png
+36,Sand Bucket Egg,26,35000000000,35000 Gold Bars,eggs/sand_bucket_egg.png
+37,Sunny Egg,27,50000000000,50000 Gold Bars,eggs/sunny_egg.png
+38,Pirate Egg,27,75000000000,75000 Gold Bars,eggs/pirate_egg.png
+39,Ship Egg,28,100000000000,100000 Gold Bars,eggs/ship_egg.png
+40,Zebra Egg,28,150000000000,150000 Gold Bars,eggs/zebra_egg.png
+41,Cheetah Egg,29,200000000000,200000 Gold Bars,eggs/cheetah_egg.png
+42,Cactus Egg,29,300000000000,300000 Gold Bars,eggs/cactus_egg.png
+43,Fossil Egg,30,450000000000,450000 Gold Bars,eggs/fossil_egg.png
+44,Egyptian Egg,31,950000000000,950000 Gold Bars,eggs/egyptian_egg.png
+45,Sandstone Egg,32,2000000000000,2 Platinum Coins,eggs/sandstone_egg.png
+46,Cowboy Egg,33,4000000000000,4 Platinum Coins,eggs/cowboy_egg.png
+47,Canyon Egg,34,9000000000000,9 Platinum Coins,eggs/canyon_egg.png
+48,Hyena Egg,35,20000000000000,20 Platinum Coins,eggs/hyena_egg.png
+49,Melted Egg,36,40000000000000,40 Platinum Coins,eggs/melted_egg.png
+50,Snow Egg,37,80000000000000,80 Platinum Coins,eggs/snow_egg.png

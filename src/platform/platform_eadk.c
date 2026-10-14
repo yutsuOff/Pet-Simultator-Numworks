@@ -29,6 +29,8 @@ bool platform_end_frame(void) {
   return true;
 }
 
+bool platform_debug_rich(void) { return false; }
+
 extern int app_main(void);
 
 int main(int argc, char *argv[]) {

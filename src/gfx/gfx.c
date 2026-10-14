@@ -285,3 +285,57 @@ static void sprite_impl(const sprite_t *s, int x, int y, bool tint, color_t tc) 
 void gfx_sprite(const sprite_t *s, int x, int y) { sprite_impl(s, x, y, false, 0); }
 
 void gfx_sprite_tint(const sprite_t *s, int x, int y, color_t c) { sprite_impl(s, x, y, true, c); }
+
+/* Half size: each destination pixel averages a 2x2 block (colors weighted by alpha). */
+static void sprite_half_impl(const sprite_t *s, int x, int y, bool tint, color_t tc) {
+  int w = s->width / 2, h = s->height / 2;
+  int y0 = y < band_y0 ? band_y0 : y;
+  int y1 = y + h > band_y1 ? band_y1 : y + h;
+  for (int py = y0; py < y1; py++) {
+    const uint8_t *r0 = s->pixels + (py - y) * 2 * s->width;
+    const uint8_t *r1 = r0 + s->width;
+    color_t *p = pixel(0, py);
+    for (int i = 0; i < w; i++) {
+      int px = x + i;
+      if (px < 0 || px >= SCREEN_W) continue;
+      uint8_t idx[4] = {r0[2 * i], r0[2 * i + 1], r1[2 * i], r1[2 * i + 1]};
+      int asum = 0, rs = 0, gs = 0, bs = 0;
+      for (int k = 0; k < 4; k++) {
+        int a = s->palette_alpha[idx[k]];
+        if (!a) continue;
+        color_t c = s->palette[idx[k]];
+        asum += a;
+        rs += (c >> 11) * a;
+        gs += ((c >> 5) & 63) * a;
+        bs += (c & 31) * a;
+      }
+      if (!asum) continue;
+      color_t c = tint ? tc : (color_t)(((rs / asum) << 11) | ((gs / asum) << 5) | (bs / asum));
+      int a = asum * 17 / 4; /* 0..255 */
+      p[px] = a >= 255 ? c : gfx_mix(p[px], c, a);
+    }
+  }
+}
+
+void gfx_sprite_half(const sprite_t *s, int x, int y) { sprite_half_impl(s, x, y, false, 0); }
+
+void gfx_sprite_half_tint(const sprite_t *s, int x, int y, color_t c) { sprite_half_impl(s, x, y, true, c); }
+
+void gfx_sprite_scaled(const sprite_t *s, int x, int y, int scale) {
+  int h = s->height * scale;
+  int y0 = y < band_y0 ? band_y0 : y;
+  int y1 = y + h > band_y1 ? band_y1 : y + h;
+  for (int py = y0; py < y1; py++) {
+    const uint8_t *row = s->pixels + (py - y) / scale * s->width;
+    color_t *p = pixel(0, py);
+    for (int i = 0; i < s->width * scale; i++) {
+      int px = x + i;
+      if (px < 0 || px >= SCREEN_W) continue;
+      uint8_t idx = row[i / scale];
+      int a = s->palette_alpha[idx];
+      if (a == 0) continue;
+      color_t c = s->palette[idx];
+      p[px] = a == 15 ? c : gfx_mix(p[px], c, a * 17);
+    }
+  }
+}

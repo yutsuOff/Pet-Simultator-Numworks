@@ -1,0 +1,141 @@
+pet,rarity,image
+Dog,Basic,pets/dog.png
+Corgi,Basic,pets/corgi.png
+Cat,Basic,pets/cat.png
+Axolotl,Basic,pets/axolotl.png
+Bunny,Basic,pets/bunny.png
+Chick,Basic,pets/chick.png
+Dalmatian,Basic,pets/dalmatian.png
+Ducky,Basic,pets/ducky.png
+Monkey,Basic,pets/monkey.png
+Parrot,Basic,pets/parrot.png
+Elephant,Basic,pets/elephant.png
+Tiger,Basic,pets/tiger.png
+Squirrel,Basic,pets/squirrel.png
+Bear,Basic,pets/bear.png
+Lamb,Basic,pets/lamb.png
+Raccoon,Basic,pets/raccoon.png
+Fox,Basic,pets/fox.png
+Bee,Basic,pets/bee.png
+Turkey,Basic,pets/turkey.png
+Scarecrow Cat,Basic,pets/scarecrow_cat.png
+Piggy,Basic,pets/piggy.png
+Llama,Basic,pets/llama.png
+White Bunny,Basic,pets/white_bunny.png
+Chicken,Basic,pets/chicken.png
+Flamingo,Basic,pets/flamingo.png
+Cow,Basic,pets/cow.png
+Ladybug,Basic,pets/ladybug.png
+Turtle,Basic,pets/turtle.png
+Hedgehog,Basic,pets/hedgehog.png
+Ugly Duckling,Basic,pets/ugly_duckling.png
+Froggy,Basic,pets/froggy.png
+Umbrella Dog,Basic,pets/umbrella_dog.png
+Umbrella Cat,Basic,pets/umbrella_cat.png
+Platypus,Basic,pets/platypus.png
+Dragon,Basic,pets/dragon.png
+Firefly,Basic,pets/firefly.png
+Mining Dog,Basic,pets/mining_dog.png
+Happy Rock,Basic,pets/happy_rock.png
+Demolition Cat,Basic,pets/demolition_cat.png
+Sapphire Carbuncle,Basic,pets/sapphire_carbuncle.png
+Emerald Carbuncle,Basic,pets/emerald_carbuncle.png
+Willow Wisp,Basic,pets/willow_wisp.png
+Bat,Basic,pets/bat.png
+Green Cobra,Basic,pets/green_cobra.png
+Black Bear,Basic,pets/black_bear.png
+Griffin,Basic,pets/griffin.png
+Guilded Raven,Basic,pets/guilded_raven.png
+Black Widow,Basic,pets/black_widow.png
+Shadow Griffin,Basic,pets/shadow_griffin.png
+Agony,Basic,pets/agony.png
+Slime,Basic,pets/slime.png
+Cyclops,Basic,pets/cyclops.png
+Mushroom Raccoon,Basic,pets/mushroom_raccoon.png
+Enchanted Cat,Basic,pets/enchanted_cat.png
+Enchanted Elephant,Basic,pets/enchanted_elephant.png
+Enchanted Deer,Basic,pets/enchanted_deer.png
+Purple Cobra,Basic,pets/purple_cobra.png
+Butterfly,Basic,pets/butterfly.png
+Peacock,Basic,pets/peacock.png
+Bobcat,Basic,pets/bobcat.png
+Mystical Fox,Basic,pets/mystical_fox.png
+Chimpanzee,Basic,pets/chimpanzee.png
+Panther,Basic,pets/panther.png
+Sloth,Basic,pets/sloth.png
+Lion,Basic,pets/lion.png
+Jaguar,Basic,pets/jaguar.png
+Lemur,Basic,pets/lemur.png
+Crocodile,Basic,pets/crocodile.png
+King Cobra,Basic,pets/king_cobra.png
+Gecko,Basic,pets/gecko.png
+Hippo,Basic,pets/hippo.png
+Seal,Basic,pets/seal.png
+Dolphin,Basic,pets/dolphin.png
+Pufferfish,Basic,pets/pufferfish.png
+Axolotuus,Basic,pets/axolotuus.png
+Blue Fish,Basic,pets/blue_fish.png
+Green Fish,Basic,pets/green_fish.png
+Goldfish,Basic,pets/goldfish.png
+Jellyfish,Basic,pets/jellyfish.png
+Mantis Shrimp,Basic,pets/mantis_shrimp.png
+Kraken,Basic,pets/kraken.png
+Stingray,Basic,pets/stingray.png
+Hydra,Basic,pets/hydra.png
+Mermaid Cat,Basic,pets/mermaid_cat.png
+Poseidon Dog,Basic,pets/poseidon_dog.png
+Poseidon Corgi,Basic,pets/poseidon_corgi.png
+Moray Eel,Basic,pets/moray_eel.png
+Whale Shark,Basic,pets/whale_shark.png
+Shark,Basic,pets/shark.png
+Midnight Axolotl,Basic,pets/midnight_axolotl.png
+Flower Gecko,Basic,pets/flower_gecko.png
+Pineapple Cat,Basic,pets/pineapple_cat.png
+Luau Cat,Basic,pets/luau_cat.png
+Luau Seal,Basic,pets/luau_seal.png
+Tiki Dominus,Basic,pets/tiki_dominus.png
+Sandcastle Cat,Basic,pets/sandcastle_cat.png
+Sandcastle Dog,Basic,pets/sandcastle_dog.png
+Fish in a Bucket,Basic,pets/fish_in_a_bucket.png
+Turtle in a Bucket,Basic,pets/turtle_in_a_bucket.png
+Sailor Shark,Basic,pets/sailor_shark.png
+Hydra Axolotl,Basic,pets/hydra_axolotl.png
+Pirate Cat,Basic,pets/pirate_cat.png
+Sailor Dolphin,Basic,pets/sailor_dolphin.png
+Pirate Panda,Basic,pets/pirate_panda.png
+Pirate Parrot,Basic,pets/pirate_parrot.png
+African Wild Dog,Basic,pets/african_wild_dog.png
+Giraffe,Basic,pets/giraffe.png
+Zebra,Basic,pets/zebra.png
+Cheetah,Basic,pets/cheetah.png
+Gazelle,Basic,pets/gazelle.png
+Quokka,Basic,pets/quokka.png
+Rhino,Basic,pets/rhino.png
+Gorilla,Basic,pets/gorilla.png
+Armadillo,Basic,pets/armadillo.png
+Kangaroo,Basic,pets/kangaroo.png
+Hyena,Basic,pets/hyena.png
+Dino,Basic,pets/dino.png
+Spitting Dino,Basic,pets/spitting_dino.png
+Fossil Dragon,Basic,pets/fossil_dragon.png
+Dino Cat,Basic,pets/dino_cat.png
+Desert Cat,Basic,pets/desert_cat.png
+Camel,Basic,pets/camel.png
+Scorpion,Basic,pets/scorpion.png
+Sphinx,Basic,pets/sphinx.png
+Desert Ram,Basic,pets/desert_ram.png
+Puma,Basic,pets/puma.png
+Honey Badger,Basic,pets/honey_badger.png
+Horse,Basic,pets/horse.png
+Bull,Basic,pets/bull.png
+Yee-haw Dog,Basic,pets/yee_haw_dog.png
+Goat,Basic,pets/goat.png
+Bison,Basic,pets/bison.png
+Deer,Basic,pets/deer.png
+Moose,Basic,pets/moose.png
+Snow Ram,Basic,pets/snow_ram.png
+Fawn,Basic,pets/fawn.png
+Snow Dog,Basic,pets/snow_dog.png
+Snow Cat,Basic,pets/snow_cat.png
+Snow Leopard,Basic,pets/snow_leopard.png
+Narwhal,Basic,pets/narwhal.png

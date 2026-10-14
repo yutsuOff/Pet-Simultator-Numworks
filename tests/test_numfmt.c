@@ -13,6 +13,15 @@ static void check(double v, const char *expected) {
   }
 }
 
+static void check_pct(double v, const char *expected) {
+  char buf[32];
+  pctfmt(v, buf);
+  if (strcmp(buf, expected) != 0) {
+    printf("FAIL pctfmt(%g) = '%s', expected '%s'\n", v, buf, expected);
+    failures++;
+  }
+}
+
 int main(void) {
   check(0, "0");
   check(7.9, "7");
@@ -31,6 +40,12 @@ int main(void) {
   check(1e33, "1.00Dc");
   check(1e66, "1.00e66");
   check(-1500, "-1.50K");
+  check_pct(1.0, "100.0%");
+  check_pct(0.25, "25.0%");
+  check_pct(0.0475, "4.75%");
+  check_pct(0.0016, "0.16%");
+  check_pct(0.0005, "0.050%");
+  check_pct(0.10005, "10.0%");
   if (failures == 0) printf("test_numfmt: OK\n");
   return failures != 0;
 }

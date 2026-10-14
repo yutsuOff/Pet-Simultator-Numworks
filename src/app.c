@@ -1,13 +1,12 @@
 /* Main loop: title screen, tab navigation and screen dispatch. */
 #include "game/game.h"
-#include "game/zones.h"
 #include "generated/sprites.h"
 #include "input/input.h"
 #include "platform/platform.h"
 #include "screens/screens.h"
 #include "ui/ui.h"
 
-#define VERSION "v0.1 · M0"
+#define VERSION "v0.2 · M1 · données PS99"
 
 static const screen_t *const screens[] = {
   &screen_farm, &screen_pets, &screen_eggs, &screen_zones,
@@ -31,8 +30,10 @@ static void draw_title(void) {
   gfx_text_aligned(&font_big, 34, y, 252, ALIGN_CENTER, "PET SIMULATOR", COL_WHITE);
   gfx_text_aligned(&font_medium, 35, y + 33, 252, ALIGN_CENTER, "NumWorks Edition", COL_SHADOW);
   gfx_text_aligned(&font_medium, 34, y + 32, 252, ALIGN_CENTER, "NumWorks Edition", COL_WHITE);
-  const sprite_t *art[] = {&spr_brk_coins, &spr_brk_chest, &spr_brk_present, &spr_brk_gems};
-  for (int i = 0; i < 4; i++) gfx_sprite(art[i], 62 + i * 52, 142);
+  /* the four pets of the Cracked Egg, around the first egg */
+  static const int starters[] = {0, 1, 2, 3};
+  for (int i = 0; i < 4; i++) gfx_sprite(pets[starters[i]].sprite, 22 + i * 58 + (i >= 2) * 52, 134);
+  gfx_sprite(eggs[0].sprite, 136, 130);
   if (blink_on) {
     gfx_text_aligned(&font_medium, 1, 191, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_SHADOW);
     gfx_text_aligned(&font_medium, 0, 190, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_WHITE);
@@ -46,6 +47,7 @@ static void draw_game(void) {
   const zone_t *z = &zones[game.zone];
   ui_background(z->sky_top, z->sky_bottom);
   screens[current]->draw();
+  ui_message_draw();
   ui_top_bar(z->name, z->accent, game.coins, game.diamonds);
   tab_t tabs[SCREEN_COUNT];
   for (int i = 0; i < SCREEN_COUNT; i++) {
@@ -92,11 +94,11 @@ static int update_game(const input_t *in, uint32_t now) {
     input_t none = {0};
     return screens[current]->update(&none, now) & ~SCREEN_FOCUS_TABS;
   }
-  if (input_pressed(in, KEY_BACK) && current != 0) {
+  int r = screens[current]->update(in, now);
+  if (input_pressed(in, KEY_BACK) && !(r & SCREEN_USED_BACK) && current != 0) {
     switch_to(0);
     return SCREEN_REDRAW_ALL;
   }
-  int r = screens[current]->update(in, now);
   if (r & SCREEN_FOCUS_TABS) {
     tabs_focused = true;
     r |= SCREEN_REDRAW_ALL;
@@ -107,6 +109,7 @@ static int update_game(const input_t *in, uint32_t now) {
 int app_main(void) {
   platform_init();
   game_init();
+  if (platform_debug_rich()) game.coins = 2e7;
   input_t in = {0};
   /* Ignore the keys still held from launching the app. */
   in.held = platform_keys();
@@ -130,6 +133,7 @@ int app_main(void) {
       }
     } else {
       redraw |= update_game(&in, now);
+      if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
       if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
       else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
     }

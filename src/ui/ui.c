@@ -85,3 +85,49 @@ int ui_pill(int x, int y, const char *text, color_t bg, color_t fg) {
   gfx_text(&font_small, x + 5, y + 1, text, fg);
   return w;
 }
+
+color_t ui_tier_color(int tier) {
+  static const color_t colors[TIER_COUNT] = {COL_RARITY_BASIC, COL_RARITY_RARE, COL_RARITY_EPIC,
+                                             COL_RARITY_LEGENDARY, COL_RARITY_MYTHICAL};
+  return colors[tier];
+}
+
+const char *ui_tier_name(int tier) {
+  static const char *const names[TIER_COUNT] = {"Basique", "Rare", "Épique", "Légendaire", "Mythique"};
+  return names[tier];
+}
+
+int ui_coin_amount(int x, int y, const font_t *f, double value, color_t c) {
+  char buf[24];
+  numfmt(value, buf);
+  gfx_sprite(&spr_coin, x, y + (f->line_height - spr_coin.height) / 2);
+  return spr_coin.width + 3 + gfx_text(f, x + spr_coin.width + 3, y, buf, c);
+}
+
+/* --- Short message shown over the content ("Pas assez de coins"...) --- */
+
+#define MESSAGE_MS 1800
+static const char *message;
+static uint32_t message_until;
+
+void ui_message(const char *text, uint32_t now) {
+  message = text;
+  message_until = now + MESSAGE_MS;
+}
+
+bool ui_message_expired(uint32_t now) {
+  if (message && (int32_t)(now - message_until) >= 0) {
+    message = 0;
+    return true;
+  }
+  return false;
+}
+
+void ui_message_draw(void) {
+  if (!message) return;
+  int w = gfx_text_width(&font_medium, message) + 24;
+  int x = (320 - w) / 2, y = CONTENT_Y + CONTENT_H - 34;
+  gfx_round_rect(x, y + 2, w, 24, 12, COL_SHADOW);
+  gfx_round_gradient(x, y, w, 24, 12, COL_BAR_LIGHT, COL_BAR);
+  gfx_text(&font_medium, x + 12, y + 5, message, COL_WHITE);
+}

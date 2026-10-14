@@ -29,5 +29,7 @@ uint32_t platform_millis(void);
 uint32_t platform_random(void);
 /* Called once per frame: paces the loop. Returns false when the app must quit. */
 bool platform_end_frame(void);
+/* PC screenshots only (petsim-host --rich): start with coins to show a later game. */
+bool platform_debug_rich(void);
 
 #endif

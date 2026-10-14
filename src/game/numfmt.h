@@ -8,4 +8,7 @@
 /* Writes into buf (at least 16 bytes). Returns buf. */
 char *numfmt(double value, char *buf);
 
+/* Probability (0..1) as a percentage, rounded: 48.2%, 4.75%, 0.16%, 0.050%. */
+char *pctfmt(double fraction, char *buf);
+
 #endif

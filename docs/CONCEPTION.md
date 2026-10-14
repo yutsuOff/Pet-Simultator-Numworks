@@ -1,6 +1,7 @@
 # Pet Simulator — NumWorks Edition · Document de conception (v0.1)
 
-> Phase actuelle : **conception**. Aucun code de jeu n'est encore écrit.
+> Phase actuelle : **M1 en cours** — squelette (M0) fait, contenu PS99 (œufs 1-50, zones, pets,
+> images) intégré avec farm, œufs, inventaire, zones et index jouables. Voir §4 et §10.
 > Ce document rassemble les vérifications techniques, une proposition d'interfaces,
 > les mécaniques à valider ensemble et l'architecture prévue.
 > Les points marqués **[À DÉCIDER]** attendent ta réponse.
@@ -165,7 +166,7 @@ y=240 └───────────────────────�
 
 ### 3.6 Écran ZONES
 
-- Liste verticale des 50 zones, regroupées par « mondes » de 5 à 10 zones (thème graphique).
+- Liste verticale des zones (37 pour l'instant, celles des œufs 1 à 50), regroupées par « mondes » de 5 à 10 zones (thème graphique).
 - Chaque carte : nom, couleur/identité, prix de déblocage, difficulté (★ à ★★★★★),
   œufs de la zone, récompenses typiques. Zones verrouillées grisées avec cadenas.
 - OK = se téléporter (instantané, sans déplacement).
@@ -184,46 +185,43 @@ y=240 └───────────────────────�
 ### 3.9 Écran QUÊTES / SUCCÈS
 
 - Deux sous-onglets. Quêtes : objectifs courts qui se renouvellent (ex. « Casse 50 coffres »,
-  « Ouvre 20 Wood Eggs ») ; Succès : objectifs permanents à paliers (bronze → diamant).
-- Barre de progression, récompense, bouton « Récupérer ».
+  « Ouvre 20 Wood Eggs ») ; Succès : objectifs permanents à paliers (bronze ### 4.1 Source : wiki Pet Simulator 99 (fait le 14/10/2026)
 
----
+L'accès à `pet-simulator.fandom.com` fonctionne désormais. `tools/fetch_wiki.py` lit les tableaux
+officiels du wiki via son API et produit les CSV de `data/` et les images :
 
-## 4. Contenu : zones, œufs, pets
+- **50 œufs** (Cracked Egg n° 1 → Snow Egg n° 50), avec prix et chances ;
+- les **37 zones** qui les contiennent (Spawn → Snow Village), avec prix et capture d'écran ;
+- les **140 pets** de ces œufs, avec leur rareté PS99 et leur image.
 
-### 4.1 Source : wiki Pet Simulator 99
+Tout est repris sans modification (détails, conversions de monnaie et exceptions dans
+[data/README.md](../data/README.md)). 11 pets ont une chance « ?? » sur le wiki (pet rare de
+l'œuf suivant) : le jeu affiche « ?? » et utilise 0,05 %.
 
-Tu as demandé de me baser sur
-[la liste des pets PS99](https://pet-simulator.fandom.com/wiki/List_of_Pets_(Pet_Simulator_99)).
+Ce que le wiki ne fournit pas est calculé par `tools/gen_data.py` (règles modifiables en un seul
+endroit) :
 
-**Problème réseau :** l'environnement de développement bloque l'accès à `fandom.com`
-(et aux autres sites de données PS99). Seul GitHub est accessible. Via la recherche web, j'ai pu
-confirmer quelques œufs, par exemple :
-
-| N° | Œuf | Pets (chance) |
-|---|---|---|
-| 1 | Cracked Egg (Spawn) | Dog 25 %, Corgi 25 %, Cat 25 %, Axolotl 25 % |
-| 2 | Spotted Egg | Bunny 64,5 %, Chick 29 %, Dalmatian 6,45 % |
-| 4 | Grass Egg (Castle) | Elephant ~71,5 %, Parrot 25 %, Tiger 3,4 % |
-| 5 | Wood Egg (Green Forest) | Squirrel ~68 %, Bear 27,5 %, Tiger 4,75 % |
-| 39 | Ship Egg | Pirate Cat ~83 %, Pirate Panda 13 %, Pirate Parrot 2,55 %, African Wild Dog 1,4 % |
-| 47 | Canyon Egg | Puma ~83 %, Horse 13 %, Bull 2,3 %, Yee-haw Dog 1,85 % |
-
-Je **n'invente pas** le reste. Solutions possibles (voir Q2) :
-1. tu autorises `pet-simulator.fandom.com` dans les paramètres réseau de l'environnement ;
-2. tu me colles le contenu des pages (ou un export) ;
-3. je reconstitue les données via la recherche web, œuf par œuf (plus lent, et je te signalerai
-   chaque donnée non confirmée).
+| Donnée | Règle |
+|---|---|
+| Rareté affichée | Tous les pets d'œufs sont « Basic » dans PS99 → rang selon la chance dans l'œuf d'origine (dernier œuf qui le contient) : ≥ 20 % Basique, ≥ 5 % Rare, ≥ 1 % Épique, ≥ 0,1 % Légendaire, sinon Mythique |
+| Puissance d'un pet | 10 × 1,35^(n° de l'œuf − 1) × rang (×1 / 1,4 / 2 / 3 / 5) |
+| PV d'une pile de coins | 4 × puissance d'un pet basique du premier œuf de la zone |
+| Coins d'une pile | prix de la zone suivante ÷ 250 (≈ 4 min de farm par zone) |
+| Couleurs de la zone | moyennes des couleurs de sa capture d'écran |
 
 ### 4.2 Format des données (facile à étendre)
 
-Les données seront dans des fichiers texte lisibles, convertis automatiquement en tableaux C au
-build. Ajouter un pet = ajouter une ligne + une image.
-
 ```
-data/zones.csv   id, nom, monde, prix, couleur, difficulté
-data/eggs.csv    id, nom, zone, prix
-data/pets.csv    id, nom, rareté, puissance, œuf, poids (probabilité), image
+data/zones.csv      area, name, cost_coins, cost_wiki, image
+data/eggs.csv       egg, name, area, cost_coins, cost_wiki, image
+data/egg_pets.csv   egg, pet, chance_percent
+data/pets.csv       pet, rarity, image
+```
+
+`make assets` les convertit en tableaux C (`src/generated/content.c`) ; `make wiki` les
+retélécharge. Plus d'œufs : `python3 tools/fetch_wiki.py --eggs 62`, puis `make assets`.
+
+œuf, poids (probabilité), image
 data/breakables.csv  id, zone, type, PV, récompense, réapparition, rareté
 ```
 
@@ -283,9 +281,10 @@ aléatoires. Rebirth, Huge et Rangs ensuite.
   les redimensionne, réduit la palette (256 couleurs max par image, souvent bien moins), gère la
   transparence (1 couleur transparente + anti-aliasing des bords précalculé), compresse en RLE et
   génère des fichiers C intégrés à l'app. **Le jeu sur la calculatrice ne dépend pas de Python.**
-- Tailles prévues : **48×48** (détail, éclosion, index agrandi), **24×24** (icônes de grille,
-  pets équipés) — le 24×24 est dérivé du 48×48 pour éviter un double stockage si la qualité suffit.
-- Budget : ~200 pets × ~1,5 Ko compressé ≈ 300 Ko → largement dans les ~2,5 Mo disponibles.
+- Tailles retenues : **48×48** pour les pets et les œufs (détail, éclosion en ×2), **24×24**
+  calculé à l'affichage (moyenne 2×2, pas de double stockage), captures de zones en **64×36**.
+- Mesuré : 140 pets + 50 œufs + 37 zones = 564 Ko d'images ; l'app complète fait 811 Ko
+  (`.nwa`), dans les ~2,5 Mo disponibles.
 - Rendu sans framebuffer plein écran : composition par **bandes** (ex. 320×20 px) en RAM puis
   envoi à l'écran → pas de scintillement, peu de RAM.
 - Tant que je n'ai pas tes images, j'utilise des **placeholders** clairement identifiés, remplacés
@@ -386,9 +385,9 @@ fichier `petsim.nwa` (ou `make run` avec nwlink).
 | Étape | Contenu | Résultat testable |
 |---|---|---|
 | **M0** | Squelette : build `.nwa` + build PC, barre haute/onglets, navigation, police, thème | App qui démarre, navigation entre écrans vides |
-| **M1** | Boucle jouable : 3 zones, farm, 2 œufs + animation, inventaire, équiper, sauvegarde + écran de test sauvegarde | **Premier jeu jouable sur calculatrice** |
+| **M1** | Boucle jouable : farm, œufs + animation, inventaire, équiper, zones, index *(fait, avec le contenu PS99)* ; sauvegarde + écran de test sauvegarde *(à faire)* | **Premier jeu jouable sur calculatrice** |
 | **M2** | Upgrades, Index, tri/filtres, gestion des doublons | Progression complète sur 3 zones |
-| **M3** | Les 50 zones / œufs / pets + intégration de tes images | Contenu complet |
+| **M3** | Contenu complet : 50 œufs, 37 zones, 140 pets du wiki PS99 *(fait)* ; images des objets à casser et des onglets *(à faire)* | Contenu complet |
 | **M4** | Quêtes, succès, mécaniques choisies (§5) | Rejouabilité |
 | **M5** | Simulateur d'équilibrage, réglages, polish visuel, optimisation | Version 1.0 |
 
@@ -400,10 +399,9 @@ tester sur ta calculatrice.
 ## 11. Questions ouvertes (récapitulatif)
 
 1. **Modèle** (N0110/N0115/N0120) + **version d'Epsilon** + OS officiel ou modifié ?
-2. **Contenu PS99** : veux-tu les œufs n° 1 à 50 de PS99 (avec leurs zones) ? Ton lien pointe vers
-   la section « Egg 91-112 » : était-ce voulu ? Et comment récupérer les données (réseau, copier-coller,
-   recherche web) ?
-3. **Images** : quantité, format, taille ; œufs / objets / fonds / icône fournis ?
+2. ~~Contenu PS99~~ : fait (œufs 1 à 50 et leurs 37 zones, depuis le wiki).
+3. **Images** : pets, œufs et zones viennent du wiki. Restent les objets à casser, les onglets et
+   l'icône : les fournis-tu ?
 4. **Farming** : semi-idle (on choisit une cible, les pets attaquent seuls, mode AUTO) **ou** aussi
    une part active (OK = coup de pouce « tap ») ?
 5. **Pets sur les cibles** : tous les pets sur un même objet, ou répartis sur plusieurs objets ?

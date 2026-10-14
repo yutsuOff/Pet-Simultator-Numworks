@@ -5,7 +5,8 @@
 #   make host       -> output/petsim-host (PC build, for tests and screenshots)
 #   make screens    -> PNG screenshots of every screen in output/screens/
 #   make test       -> unit tests on PC
-#   make assets     -> regenerates src/generated/ from tools/ and assets/ (needs Python 3 + Pillow)
+#   make assets     -> regenerates src/generated/ from data/, assets/ and tools/ (needs Python 3 + Pillow)
+#   make wiki       -> downloads data/ and the images again from the PS99 wiki (needs network)
 
 Q ?= @
 BUILD_DIR = output
@@ -69,14 +70,21 @@ $(BUILD_DIR)/petsim-host: $(HOST_SRC) $(wildcard src/*.h src/*/*.h)
 	@echo "HOSTCC  $@"
 	$(Q) $(HOST_CC) $(HOST_CFLAGS) $(HOST_SRC) -lm -o $@
 
-SCREENS_SCRIPT = SHOT:00_title OK W2 SHOT:01_farm OK OK OK OK W2 SHOT:02_farm_hit \
-  R R D SHOT:03_farm_select D SHOT:04_tabs_focus R SHOT:05_pets R SHOT:06_eggs R SHOT:07_zones \
-  R SHOT:08_upgrades R SHOT:09_index R SHOT:10_quests
+SCREENS_SCRIPT = SHOT:00_title OK W2 SHOT:01_farm OK OK OK W2 SHOT:02_farm_hit \
+  3 W2 SHOT:03_eggs OK W10 SHOT:04_hatch_shake W24 SHOT:05_hatch_crack W30 SHOT:06_hatch_reveal \
+  BACK 2 W2 SHOT:07_pets 1 W90 SHOT:08_farm_team D SHOT:09_tabs_focus R R R R SHOT:10_upgrades
+HATCH_20 = $(foreach i,1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20,OK OK)
+# Later game (--rich: starts with 20M coins): zones 2-9, then many eggs.
+SCREENS_RICH = OK 4 D OK D OK D OK D OK D OK D OK D OK D OK D D W2 SHOT:11_zones \
+  3 $(HATCH_20) W60 SHOT:12_hatch_rich BACK U U U U $(HATCH_20) BACK U U U $(HATCH_20) BACK \
+  W60 SHOT:13_eggs_list 2 TOOLBOX W2 SHOT:14_pets_rich 1 W90 SHOT:15_farm_rich \
+  6 R R R D SHOT:16_index
 
 .PHONY: screens
 screens: $(BUILD_DIR)/petsim-host
 	@mkdir -p $(BUILD_DIR)/screens
 	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens "$(SCREENS_SCRIPT)"
+	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens --rich "$(SCREENS_RICH)"
 	$(Q) python3 tools/ppm_to_png.py $(BUILD_DIR)/screens
 
 # --- Tests ---
@@ -86,6 +94,8 @@ test:
 	@mkdir -p $(BUILD_DIR)/tests
 	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_numfmt.c src/game/numfmt.c -o $(BUILD_DIR)/tests/test_numfmt
 	$(Q) $(BUILD_DIR)/tests/test_numfmt
+	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_eggs.c src/game/game.c src/generated/content.c -lm -o $(BUILD_DIR)/tests/test_eggs
+	$(Q) $(BUILD_DIR)/tests/test_eggs
 
 # --- Generated sources (committed, so building does not need Python) ---
 
@@ -94,7 +104,12 @@ assets:
 	python3 tools/gen_font.py src/generated/fonts.c
 	python3 tools/gen_placeholder_art.py
 	python3 tools/convert_images.py assets/sprites.txt src/generated/sprites
+	python3 tools/gen_data.py
 	python3 tools/gen_icon.py assets/icon.png
+
+.PHONY: wiki
+wiki:
+	python3 tools/fetch_wiki.py --eggs 50
 
 .PHONY: clean
 clean:

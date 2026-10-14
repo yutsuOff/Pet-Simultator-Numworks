@@ -1,0 +1,38 @@
+area,name,cost_coins,cost_wiki,image
+1,Spawn,0,free,zones/spawn.png
+2,Colorful Forest,900,900 Coins,zones/colorful_forest.png
+3,Castle,2500,2500 Coins,zones/castle.png
+4,Green Forest,8000,8000 Coins,zones/green_forest.png
+5,Autumn,20000,20000 Coins,zones/autumn.png
+6,Cherry Blossom,60000,60000 Coins,zones/cherry_blossom.png
+7,Farm,150000,150000 Coins,zones/farm.png
+8,Backyard,400000,400000 Coins,zones/backyard.png
+9,Misty Falls,1000000,1 Gold Bars,zones/misty_falls.png
+10,Mine,2500000,2 Gold Bars + 500000 Coins,zones/mine.png
+11,Crystal Caverns,6000000,6 Gold Bars,zones/crystal_caverns.png
+12,Dead Forest,15000000,15 Gold Bars,zones/dead_forest.png
+13,Dark Forest,35000000,35 Gold Bars,zones/dark_forest.png
+14,Mushroom Field,80000000,80 Gold Bars,zones/mushroom_field.png
+15,Enchanted Forest,200000000,200 Gold Bars,zones/enchanted_forest.png
+16,Crimson Forest,450000000,450 Gold Bars,zones/crimson_forest.png
+17,Jungle,1000000000,1000 Gold Bars,zones/jungle.png
+18,Jungle Temple,2500000000,2500 Gold Bars,zones/jungle_temple.png
+19,Oasis,5500000000,5500 Gold Bars,zones/oasis.png
+20,Beach,10000000000,10000 Gold Bars,zones/beach.png
+21,Coral Reef,30000000000,30000 Gold Bars,zones/coral_reef.png
+22,Shipwreck,65000000000,65000 Gold Bars,zones/shipwreck.png
+23,Atlantis,150000000000,150000 Gold Bars,zones/atlantis.png
+24,Palm Beach,350000000000,350000 Gold Bars,zones/palm_beach.png
+25,Tiki,750000000000,750000 Gold Bars,zones/tiki.png
+26,Pirate Cove,1500000000000,1 Platinum Coins + 500000 Gold Bars,zones/pirate_cove.png
+27,Pirate Tavern,4000000000000,4 Platinum Coins,zones/pirate_tavern.png
+28,Shanty Town,8500000000000,8 Platinum Coins + 500000 Gold Bars,zones/shanty_town.png
+29,Desert Village,20000000000000,20 Platinum Coins,zones/desert_village.png
+30,Fossil Digsite,45000000000000,45 Platinum Coins,zones/fossil_digsite.png
+31,Desert Pyramids,100000000000000,100 Platinum Coins,zones/desert_pyramids.png
+32,Red Desert,250000000000000,250 Platinum Coins,zones/red_desert.png
+33,Wild West,500000000000000,500 Platinum Coins,zones/wild_west.png
+34,Grand Canyons,1000000000000000,1000 Platinum Coins,zones/grand_canyons.png
+35,Safari,2500000000000000,2500 Platinum Coins,zones/safari.png
+36,Mountains,6000000000000000,6000 Platinum Coins,zones/mountains.png
+37,Snow Village,15000000000000000,15000 Platinum Coins,zones/snow_village.png
