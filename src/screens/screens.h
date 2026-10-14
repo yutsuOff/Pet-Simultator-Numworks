@@ -1,0 +1,31 @@
+#ifndef SCREENS_H
+#define SCREENS_H
+
+#include <stdint.h>
+#include "../input/input.h"
+#include "../gfx/gfx.h"
+
+/* Bits returned by screen_t.update */
+enum {
+  SCREEN_REDRAW_CONTENT = 1, /* only the content area changed */
+  SCREEN_REDRAW_ALL = 2,     /* bars changed too (currencies, zone...) */
+  SCREEN_FOCUS_TABS = 4,     /* the player moved down past the last row */
+};
+
+typedef struct {
+  const char *label;
+  const sprite_t *icon;
+  void (*enter)(void);
+  int (*update)(const input_t *in, uint32_t now);
+  void (*draw)(void);
+} screen_t;
+
+extern const screen_t screen_farm;
+extern const screen_t screen_pets;
+extern const screen_t screen_eggs;
+extern const screen_t screen_zones;
+extern const screen_t screen_upgrades;
+extern const screen_t screen_index;
+extern const screen_t screen_quests;
+
+#endif

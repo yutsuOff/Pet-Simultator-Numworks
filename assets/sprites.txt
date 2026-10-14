@@ -1,0 +1,15 @@
+# C name        PNG                          [size]
+# Provisional icons (tools/gen_placeholder_art.py), replaced when real art is provided.
+spr_coin         assets/ui/coin.png
+spr_gem          assets/ui/gem.png
+spr_tab_farm     assets/ui/tab_farm.png
+spr_tab_pets     assets/ui/tab_pets.png
+spr_tab_eggs     assets/ui/tab_eggs.png
+spr_tab_zones    assets/ui/tab_zones.png
+spr_tab_upgrades assets/ui/tab_upgrades.png
+spr_tab_index    assets/ui/tab_index.png
+spr_tab_quests   assets/ui/tab_quests.png
+spr_brk_coins    assets/ui/brk_coins.png
+spr_brk_chest    assets/ui/brk_chest.png
+spr_brk_present  assets/ui/brk_present.png
+spr_brk_gems     assets/ui/brk_gems.png

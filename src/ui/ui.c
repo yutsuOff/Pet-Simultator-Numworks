@@ -1,0 +1,87 @@
+#include "ui.h"
+#include "../game/numfmt.h"
+#include "../generated/sprites.h"
+
+void ui_background(color_t top, color_t bottom) {
+  gfx_vgradient(0, CONTENT_Y, 320, CONTENT_H, top, bottom);
+}
+
+static int amount(int right, int y, const sprite_t *icon, double value) {
+  char buf[24];
+  numfmt(value, buf);
+  int tw = gfx_text_width(&font_medium, buf);
+  int w = tw + icon->width + 14;
+  int x = right - w;
+  gfx_round_rect(x, y, w, 18, 9, COL_BAR_LIGHT);
+  gfx_sprite(icon, x + 3, y + 2);
+  gfx_text(&font_medium, x + icon->width + 7, y + 2, buf, COL_WHITE);
+  return x;
+}
+
+void ui_top_bar(const char *zone_name, color_t zone_color, double coins, double diamonds) {
+  gfx_vgradient(0, 0, 320, TOPBAR_H, COL_BAR_LIGHT, COL_BAR);
+  gfx_fill_rect(0, TOPBAR_H - 1, 320, 1, COL_SHADOW);
+  /* zone badge */
+  int tw = gfx_text_width(&font_medium, zone_name);
+  gfx_round_gradient(3, 2, tw + 14, 18, 9, gfx_mix(zone_color, COL_WHITE, 70), zone_color);
+  gfx_text_shadow(&font_medium, 10, 4, zone_name, COL_WHITE, COL_SHADOW);
+  int x = amount(317, 2, &spr_gem, diamonds);
+  amount(x - 4, 2, &spr_coin, coins);
+}
+
+void ui_tab_bar(const tab_t *tabs, int count, int current, bool focused) {
+  int y = 240 - TABBAR_H;
+  gfx_vgradient(0, y, 320, TABBAR_H, COL_BAR_LIGHT, COL_BAR);
+  gfx_fill_rect(0, y, 320, 1, COL_SHADOW);
+  /* The current tab is wide (icon + label), the others show their icon only. */
+  int label_w = gfx_text_width(&font_small, tabs[current].label);
+  int wide = label_w + 30;
+  int narrow = (320 - 4 - wide) / (count - 1);
+  int x = 2;
+  for (int i = 0; i < count; i++) {
+    int w = i == current ? wide : narrow;
+    if (i == current) {
+      color_t top = focused ? COL_GOLD : RGB(90, 160, 255);
+      color_t bottom = focused ? COL_GOLD_DARK : COL_BLUE_DARK;
+      gfx_round_gradient(x + 1, y + 3, w - 2, TABBAR_H - 5, 8, top, bottom);
+      gfx_sprite(tabs[i].icon, x + 7, y + 4);
+      gfx_text_shadow(&font_small, x + 26, y + 6, tabs[i].label, COL_WHITE, COL_SHADOW);
+    } else {
+      gfx_sprite_tint(tabs[i].icon, x + (w - 16) / 2, y + 4, RGB(150, 165, 210));
+    }
+    x += w;
+  }
+}
+
+void ui_panel(int x, int y, int w, int h) {
+  gfx_round_rect(x, y, w, h, 8, COL_OUTLINE);
+  gfx_round_gradient(x + 2, y + 2, w - 4, h - 4, 6, COL_PANEL_TOP, COL_PANEL_BOT);
+}
+
+void ui_card(int x, int y, int w, int h, bool selected, color_t top, color_t bottom) {
+  if (selected) {
+    y -= 2;
+    gfx_round_rect(x + 1, y + 4, w, h, 7, gfx_mix(COL_SHADOW, COL_WHITE, 60)); /* drop shadow */
+    gfx_round_rect(x - 1, y - 1, w + 2, h + 2, 8, COL_GOLD);
+    gfx_round_gradient(x + 2, y + 2, w - 4, h - 4, 5, top, bottom);
+    gfx_round_frame(x - 1, y - 1, w + 2, h + 2, 8, 3, COL_GOLD);
+  } else {
+    gfx_round_rect(x, y, w, h, 7, COL_OUTLINE);
+    gfx_round_gradient(x + 2, y + 2, w - 4, h - 4, 5, top, bottom);
+  }
+}
+
+void ui_button(int x, int y, int w, int h, const char *label, bool selected, color_t color) {
+  gfx_round_rect(x, y + 2, w, h, h / 2, gfx_mix(color, COL_SHADOW, 140));
+  gfx_round_gradient(x, y, w, h, h / 2, gfx_mix(color, COL_WHITE, 80), color);
+  if (selected) gfx_round_frame(x - 2, y - 2, w + 4, h + 6, h / 2 + 2, 2, COL_GOLD);
+  gfx_text_aligned(&font_medium, x + 1, y + (h - 14) / 2 + 1, w, ALIGN_CENTER, label, COL_SHADOW);
+  gfx_text_aligned(&font_medium, x, y + (h - 14) / 2, w, ALIGN_CENTER, label, COL_WHITE);
+}
+
+int ui_pill(int x, int y, const char *text, color_t bg, color_t fg) {
+  int w = gfx_text_width(&font_small, text) + 10;
+  gfx_round_rect(x, y, w, 14, 7, bg);
+  gfx_text(&font_small, x + 5, y + 1, text, fg);
+  return w;
+}

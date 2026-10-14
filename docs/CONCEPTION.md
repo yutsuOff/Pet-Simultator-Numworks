@@ -104,7 +104,7 @@ y=240 └───────────────────────�
 | OK / EXE | action principale (attaquer, ouvrir, équiper, acheter…) |
 | Retour | fermer une fenêtre / revenir |
 | 1 à 7 | accès direct aux onglets (FARM=1 … QUÊTES=7) |
-| Shift + ←/→ | onglet précédent / suivant |
+| ↓ depuis la dernière ligne | sélectionne la barre d'onglets, puis ←/→ pour changer d'onglet, ↑ pour revenir |
 | Toolbox | options de l'écran (tri, filtres, actions groupées) |
 | Home | sauvegarder et quitter |
 
