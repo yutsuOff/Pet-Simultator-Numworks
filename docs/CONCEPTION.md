@@ -1,0 +1,417 @@
+# Pet Simulator — NumWorks Edition · Document de conception (v0.1)
+
+> Phase actuelle : **conception**. Aucun code de jeu n'est encore écrit.
+> Ce document rassemble les vérifications techniques, une proposition d'interfaces,
+> les mécaniques à valider ensemble et l'architecture prévue.
+> Les points marqués **[À DÉCIDER]** attendent ta réponse.
+
+---
+
+## 1. Contraintes techniques vérifiées
+
+### 1.1 Ce qui a été réellement vérifié (14/10/2026)
+
+| Élément | Résultat | Comment |
+|---|---|---|
+| SDK officiel | **EADK**, fourni par le paquet npm `nwlink` (dernière version : **1.0.0**) | `eadk.h` lu dans le paquet |
+| Exemple officiel C | `numworks/epsilon-sample-app-c` | cloné et lu |
+| Compilation `.nwa` | **Réussie** avec `arm-none-eabi-gcc 13.2.1` + `nwlink 1.0.0` (flags `eadk-cflags-device`) | build réel dans l'environnement de dev |
+| Test sur calculatrice | **Non fait** (pas de calculatrice ici) | — |
+
+Remarque : le Makefile de l'exemple officiel épingle `nwlink@0.0.16`, qui **plante** avec Node 22.
+Avec `nwlink@1.0.0`, la commande `eadk-cflags` a été renommée `eadk-cflags-device`.
+Notre Makefile en tiendra compte.
+
+### 1.2 Ce que l'API EADK permet
+
+- **Écran** 320×240, couleurs RGB565 : `push_rect` (envoi d'un bloc de pixels), `push_rect_uniform`
+  (rectangle plein), `pull_rect` (lecture de l'écran), `wait_for_vblank`, `draw_string`
+  (2 polices système, fond opaque obligatoire).
+- **Clavier** : état de toutes les touches (`keyboard_scan`) ou événements (`event_get`).
+- **Temps** : `timing_millis` (millisecondes **depuis le démarrage**), `msleep`, `usleep`.
+- **Hasard** : `eadk_random()` (générateur matériel).
+- **Divers** : batterie, rétroéclairage, USB, données externes en lecture seule.
+
+### 1.3 Ce que l'API EADK **ne** permet **pas**
+
+- **Aucune API de fichiers ni de sauvegarde.** C'est la contrainte la plus importante (voir §8).
+- **Aucune horloge réelle (date/heure).** On ne peut donc pas faire de gains hors-ligne ni de
+  récompenses « quotidiennes » basées sur la date. Tous les timers fonctionnent uniquement
+  pendant que le jeu tourne.
+- Pas d'alpha-blending matériel : la transparence des images est gérée par notre code.
+- Pas de son.
+
+### 1.4 Modèles compatibles
+
+| Modèle | Apps `.nwa` | Remarques |
+|---|---|---|
+| N0100 | **Non** | pas d'applications externes |
+| N0110 / N0115 | Oui | Cortex-M7 216 MHz, ~256 Ko de RAM au total |
+| N0120 | Oui | Cortex-M7 plus rapide, plus de RAM |
+
+- **Flash disponible pour les apps : environ 2,5 Mo** (source communautaire Nwagyu) → budget pour
+  le code + toutes les images + les données.
+- **RAM** : la taille exacte du tas des apps externes n'est pas documentée. Je vise un budget
+  **très prudent** : pas de framebuffer plein écran (320×240×2 = 150 Ko), allocation **statique**
+  uniquement (pas de `malloc`).
+- **Bug connu** ([epsilon#2357](https://github.com/numworks/epsilon/issues/2357)) : corruption
+  mémoire quand une app écrit dans son tas, corrigée en Epsilon 24.6.0 mais un problème subsiste
+  sur N0120 dans certains cas. Raison de plus pour éviter le tas.
+- Installation : via le site officiel `my.numworks.com/apps` (ou `nwlink install-nwa` en USB).
+
+**[À DÉCIDER] Q1 — J'ai besoin de ton modèle exact (N0110 / N0115 / N0120, écrit au dos) et de ta
+version d'Epsilon (Paramètres → À propos).** Utilises-tu l'OS officiel Epsilon, ou Upsilon/Omega ?
+
+---
+
+## 2. Principes de gameplay (rappel de ton cahier des charges)
+
+- Aucun personnage déplaçable : tout passe par des **écrans**, des **cartes** et des **menus**.
+- Boucle principale : **farmer** des objets → gagner **coins** (+ parfois **diamonds**) →
+  **ouvrir des œufs** → obtenir de meilleurs **pets** → farmer plus vite → **débloquer des zones** →
+  nouveaux œufs, etc.
+- En parallèle : **upgrades**, **index**, **quêtes**, **succès**.
+
+---
+
+## 3. Organisation des interfaces (proposition)
+
+### 3.1 Structure commune à tous les écrans
+
+```
+y=0   ┌──────────────────────────────────────────────────────┐
+      │ [icône zone] Zone 3 · Forest      🪙 12.4K   💎 230  │  barre haute (20 px)
+y=20  ├──────────────────────────────────────────────────────┤
+      │                                                      │
+      │              contenu de l'écran (200 px)             │
+      │                                                      │
+y=220 ├──────────────────────────────────────────────────────┤
+      │ FARM │ PETS │ ŒUFS │ ZONES │ AMÉL. │ INDEX │ QUÊTES  │  barre d'onglets (20 px)
+y=240 └──────────────────────────────────────────────────────┘
+```
+
+- La couleur dominante de la barre haute et du fond change avec l'**identité graphique de la zone**.
+- Style : cartes à coins arrondis, bordures épaisses, dégradés simples, couleurs vives par rareté
+  (gris Basic, bleu Rare, violet Epic, orange Legendary, rouge/arc-en-ciel Mythical, etc.).
+- Police : les 2 polices système ont un fond opaque. Je propose d'intégrer **une police bitmap
+  maison** (chiffres + lettres) pour un rendu plus « jeu » et des textes posés sur les dégradés.
+
+### 3.2 Contrôles
+
+| Touche | Action |
+|---|---|
+| Flèches | se déplacer entre les éléments de l'écran |
+| OK / EXE | action principale (attaquer, ouvrir, équiper, acheter…) |
+| Retour | fermer une fenêtre / revenir |
+| 1 à 7 | accès direct aux onglets (FARM=1 … QUÊTES=7) |
+| Shift + ←/→ | onglet précédent / suivant |
+| Toolbox | options de l'écran (tri, filtres, actions groupées) |
+| Home | sauvegarder et quitter |
+
+### 3.3 Écran FARM (accueil)
+
+```
+┌──────────────────────────────────────────────────────┐
+│ 🌲 Zone 3 · Forest                🪙 12.4K   💎 230   │
+├──────────────────────────────────────────────────────┤
+│ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                  │
+│ │ pile │ │COFFRE│ │ pile │ │ 💎   │   grille 4×2 de  │
+│ │ ▓▓▓░ │ │▓▓▓▓▓▓│ │ ▓░░░ │ │ ▓▓░░ │   cartes « objet »│
+│ └──────┘ └══════┘ └──────┘ └──────┘   (image + barre │
+│ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐    de vie + gain)│
+│ │ pile │ │ (⌛) │ │ pile │ │ pile │   ⌛ = réapparition│
+│ └──────┘ └──────┘ └──────┘ └──────┘                  │
+│ Pets : [🐱][🐶][🐉][  ][  ]   Dégâts/s : 1.2K  [AUTO]│
+├──────────────────────────────────────────────────────┤
+│ FARM │ PETS │ ŒUFS │ ZONES │ AMÉL. │ INDEX │ QUÊTES  │
+└──────────────────────────────────────────────────────┘
+```
+
+- On sélectionne un objet avec les flèches, OK envoie les pets dessus.
+- Les icônes des pets équipés « sautent » vers l'objet attaqué, petits chiffres de dégâts,
+  particules de coins à la destruction, barre de vie animée.
+- **Anti-répétition** : mode **AUTO** (les pets passent seuls à l'objet suivant). Voir Q4.
+
+### 3.4 Écran PETS / INVENTAIRE
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Inventaire 37/50     Équipés 3/5      Tri : Puissance│
+├──────────────────────────────────────────────────────┤
+│ ┌────┐┌────┐┌────┐┌────┐┌────┐  │ ┌─────────────────┐│
+│ │🐉✔ ││🐱  ││🐶✔ ││🦊  ││🐰  │  │ │  [grande image] ││
+│ │x2  ││x14 ││    ││x3  ││x7  │  │ │ Dragon  ★LEGEND.││
+│ └────┘└────┘└────┘└────┘└────┘  │ │ Puissance 1.4K  ││
+│ (grille 5×3, défilement)        │ │ Œuf : Wood Egg  ││
+│                                 │ │ [Équiper] [Plus]││
+│                                 │ └─────────────────┘│
+└──────────────────────────────────────────────────────┘
+```
+
+- Grille d'icônes avec cadre coloré selon la rareté, ✔ si équipé, ×N pour les doublons.
+- Panneau de détail à droite. Tri : puissance / rareté / nom. Filtres : rareté, équipés.
+- Actions : équiper/déséquiper, **« Équiper les meilleurs »** (un seul bouton), supprimer/recycler
+  les doublons, (fusion si retenue, voir §5).
+
+### 3.5 Écran ŒUFS
+
+- Liste des œufs de la zone actuelle (et des zones débloquées) : image, nom, prix.
+- Panneau : tous les pets de l'œuf avec **leur probabilité exacte** (tient compte de la chance
+  actuelle) ; les pets non découverts apparaissent en **silhouette noire « ? »**.
+- Ouverture : animation en 3 temps → l'œuf tremble, se fissure, éclate avec un flash de la couleur
+  de rareté → le pet apparaît en grand avec son nom, sa rareté, « NOUVEAU ! » s'il est inédit.
+  Plus la rareté est haute, plus l'animation est spectaculaire (plus de flashs, fond arc-en-ciel).
+- Historique des **10 meilleures découvertes** (les plus rares) visible depuis cet écran.
+
+### 3.6 Écran ZONES
+
+- Liste verticale des 50 zones, regroupées par « mondes » de 5 à 10 zones (thème graphique).
+- Chaque carte : nom, couleur/identité, prix de déblocage, difficulté (★ à ★★★★★),
+  œufs de la zone, récompenses typiques. Zones verrouillées grisées avec cadenas.
+- OK = se téléporter (instantané, sans déplacement).
+
+### 3.7 Écran AMÉLIORATIONS
+
+- Onglets de catégories : **Pets** · **Farming** · **Œufs** · **Richesse**.
+- Chaque upgrade : icône, nom, description, niveau actuel / max, effet actuel → effet suivant, coût
+  (coins ou diamonds).
+
+### 3.8 Écran INDEX
+
+- Grille de tous les pets, par œuf. Découverts : image en couleur ; non découverts : silhouette.
+- Compteur global (ex. 87/212) + **récompenses de complétion** par œuf et par palier global.
+
+### 3.9 Écran QUÊTES / SUCCÈS
+
+- Deux sous-onglets. Quêtes : objectifs courts qui se renouvellent (ex. « Casse 50 coffres »,
+  « Ouvre 20 Wood Eggs ») ; Succès : objectifs permanents à paliers (bronze → diamant).
+- Barre de progression, récompense, bouton « Récupérer ».
+
+---
+
+## 4. Contenu : zones, œufs, pets
+
+### 4.1 Source : wiki Pet Simulator 99
+
+Tu as demandé de me baser sur
+[la liste des pets PS99](https://pet-simulator.fandom.com/wiki/List_of_Pets_(Pet_Simulator_99)).
+
+**Problème réseau :** l'environnement de développement bloque l'accès à `fandom.com`
+(et aux autres sites de données PS99). Seul GitHub est accessible. Via la recherche web, j'ai pu
+confirmer quelques œufs, par exemple :
+
+| N° | Œuf | Pets (chance) |
+|---|---|---|
+| 1 | Cracked Egg (Spawn) | Dog 25 %, Corgi 25 %, Cat 25 %, Axolotl 25 % |
+| 2 | Spotted Egg | Bunny 64,5 %, Chick 29 %, Dalmatian 6,45 % |
+| 4 | Grass Egg (Castle) | Elephant ~71,5 %, Parrot 25 %, Tiger 3,4 % |
+| 5 | Wood Egg (Green Forest) | Squirrel ~68 %, Bear 27,5 %, Tiger 4,75 % |
+| 39 | Ship Egg | Pirate Cat ~83 %, Pirate Panda 13 %, Pirate Parrot 2,55 %, African Wild Dog 1,4 % |
+| 47 | Canyon Egg | Puma ~83 %, Horse 13 %, Bull 2,3 %, Yee-haw Dog 1,85 % |
+
+Je **n'invente pas** le reste. Solutions possibles (voir Q2) :
+1. tu autorises `pet-simulator.fandom.com` dans les paramètres réseau de l'environnement ;
+2. tu me colles le contenu des pages (ou un export) ;
+3. je reconstitue les données via la recherche web, œuf par œuf (plus lent, et je te signalerai
+   chaque donnée non confirmée).
+
+### 4.2 Format des données (facile à étendre)
+
+Les données seront dans des fichiers texte lisibles, convertis automatiquement en tableaux C au
+build. Ajouter un pet = ajouter une ligne + une image.
+
+```
+data/zones.csv   id, nom, monde, prix, couleur, difficulté
+data/eggs.csv    id, nom, zone, prix
+data/pets.csv    id, nom, rareté, puissance, œuf, poids (probabilité), image
+data/breakables.csv  id, zone, type, PV, récompense, réapparition, rareté
+```
+
+### 4.3 Probabilités vérifiables
+
+- Les chances sont stockées en **entiers** (poids sur 1 000 000 000) → aucune erreur d'arrondi.
+- L'écran Œufs affiche le % exact. Un **test automatique sur PC** ouvre 10 millions d'œufs et
+  vérifie que la distribution observée correspond aux pourcentages affichés.
+- Les bonus de chance (upgrades) multiplient les poids des raretés hautes, puis renormalisent :
+  le % affiché est toujours le % réel.
+
+---
+
+## 5. Mécaniques de progression à choisir ensemble **[À DÉCIDER] Q7**
+
+Je ne les ajoute pas sans ton accord. Voici mes propositions avec leurs avantages :
+
+| Mécanique | Principe | Avantages | Coût / risque |
+|---|---|---|---|
+| **Variantes Golden / Rainbow** | Fusionner N exemplaires identiques → version dorée (×2-3 puissance), puis arc-en-ciel | Donne une utilité aux doublons, objectif de collection énorme, fidèle à PS99 | Multiplie l'index (×3) |
+| **Shiny** | Petite chance (ex. 1/1000) qu'un pet éclose « shiny » (scintillement, ×1,5) | Le frisson du jackpot à chaque ouverture | Quasi aucun |
+| **Huge pets** | Pets gigantesques ultra-rares (1/50 000+) par monde | Objectif ultime, très PS99 | Équilibrage délicat |
+| **Rebirth** | Remise à zéro des coins/zones contre un multiplicateur permanent | Rejouabilité quasi infinie | Doit rester optionnel et rentable |
+| **Niveaux / maîtrise des pets** | Les pets gagnent de l'XP en farmant | Attachement aux pets | Sauvegarde plus lourde |
+| **Potions / boosts temporaires** | Objets ×2 coins, ×2 chance pendant X minutes de jeu | Récompenses de quêtes variées | Simple |
+| **Enchantements** | Bonus passifs équipables (coins, chance…) | Personnalisation | Interface en plus |
+| **Rangs** | Rangs débloqués par des quêtes, donnant + emplacements de pets/récompenses | Objectifs court terme constants (comme PS99) | Doit bien s'articuler avec les quêtes |
+| **Événements aléatoires** | « Pluie de coins », « Coffre géant » apparaissent pendant le jeu | Surprise, dynamisme | Simple |
+| **Secrets** | Pets secrets via codes, actions cachées, zones cachées | Découverte | À scénariser |
+
+Ma recommandation pour la **première version jouable** : Golden/Rainbow + Shiny + Événements
+aléatoires. Rebirth, Huge et Rangs ensuite.
+
+---
+
+## 6. Économie et équilibrage (principes)
+
+- **Grands nombres** : `double` (jusqu'à 10^308), affiché avec suffixes : 1.2K, 34.5M, 1.0B, 7.8T,
+  1.2Qa, 3.4Qi, Sx, Sp, Oc, No, Dc… Formateur écrit à la main (le `printf` embarqué ne gère pas
+  les flottants).
+- Croissance **géométrique** maîtrisée : PV des objets, prix des zones et puissance des pets
+  progressent d'environ ×2 à ×3 par zone, calibrés pour que :
+  - chaque zone se débloque après quelques minutes de farm avec les pets de la zone précédente ;
+  - un pet rare de l'œuf N rende la zone N+2 / N+3 confortable, sans permettre de tout sauter.
+- **Diamonds** : rares (petite chance sur chaque objet, coffres à diamants, quêtes, succès, index).
+  Utilisés pour les améliorations permanentes.
+- **Simulateur d'équilibrage sur PC** : un « bot » joue au jeu en accéléré avec les vraies formules
+  et produit un graphique temps/zone → on ajuste les chiffres sans deviner.
+
+**[À DÉCIDER] Q6 — Durée visée** pour finir les 50 zones (sans rebirth) : ~10 h ? ~30 h ? plus ?
+
+---
+
+## 7. Graphismes et images
+
+- **Pipeline PC** (Python, uniquement sur l'ordinateur) : `tools/convert_images.py` lit tes PNG,
+  les redimensionne, réduit la palette (256 couleurs max par image, souvent bien moins), gère la
+  transparence (1 couleur transparente + anti-aliasing des bords précalculé), compresse en RLE et
+  génère des fichiers C intégrés à l'app. **Le jeu sur la calculatrice ne dépend pas de Python.**
+- Tailles prévues : **48×48** (détail, éclosion, index agrandi), **24×24** (icônes de grille,
+  pets équipés) — le 24×24 est dérivé du 48×48 pour éviter un double stockage si la qualité suffit.
+- Budget : ~200 pets × ~1,5 Ko compressé ≈ 300 Ko → largement dans les ~2,5 Mo disponibles.
+- Rendu sans framebuffer plein écran : composition par **bandes** (ex. 320×20 px) en RAM puis
+  envoi à l'écran → pas de scintillement, peu de RAM.
+- Tant que je n'ai pas tes images, j'utilise des **placeholders** clairement identifiés, remplacés
+  dès réception.
+
+**[À DÉCIDER] Q3 — Images** : combien en as-tu, quel format (PNG transparent ?), quelle taille ?
+Fournis-tu aussi les œufs, les objets à casser, les fonds de zone, l'icône de l'app ?
+
+---
+
+## 8. Sauvegarde — l'état réel des possibilités
+
+### 8.1 Constat
+
+- EADK **ne fournit aucune API de sauvegarde**.
+- Le stockage d'Epsilon (là où vivent les scripts Python) est accessible **de façon non officielle**
+  grâce à une bibliothèque communautaire (`storage.c` de Yaya.Cout, utilisée par plusieurs apps,
+  dont le template Rust NumworksAppsRust). Elle localise le stockage en mémoire et lit/écrit des
+  « fichiers » dedans.
+- Ce stockage est en **RAM** : d'après la communauté, il survit à l'extinction (mise en veille)
+  et aux sorties d'app, mais **pas à un reset complet ni à une batterie totalement vide**.
+- Taille du stockage partagé avec tes scripts Python : quelques dizaines de Ko → la sauvegarde
+  doit être **compacte** (objectif < 4 Ko).
+
+### 8.2 Ma proposition (honnête)
+
+1. **Sauvegarde principale** dans le stockage Epsilon via `storage.c`, sous forme d'un fichier
+   `petsim.py` contenant les données encodées en commentaire + somme de contrôle.
+   - Avantage attendu : un fichier `.py` est **visible dans l'app Python**, donc il devrait pouvoir
+     être récupéré sur ordinateur comme n'importe quel script (outils officiels/communautaires de
+     transfert) et être conservé lors des mises à jour d'Epsilon, qui préservent les scripts.
+     → ce serait notre **sauvegarde de secours** en cas de reset. *À confirmer sur ta calculatrice.*
+   - Sauvegarde automatique toutes les 2 minutes de jeu, après chaque événement important
+     (éclosion rare, achat de zone) et en quittant avec Home.
+   - Double écriture + vérification (checksum) → une sauvegarde corrompue n'écrase jamais la bonne.
+2. **Statut : expérimental tant que ce n'est pas testé sur TA calculatrice.** Je prévois un
+   petit écran de diagnostic (« Test de sauvegarde ») pour le vérifier dès la première version.
+3. **Code de sauvegarde à recopier** : je le déconseille comme solution principale — une
+   sauvegarde complète ferait plusieurs milliers de caractères. Je ne le prévois qu'en dernier
+   recours, réduit à l'essentiel (monnaies, zones, upgrades, meilleurs pets).
+
+**[À DÉCIDER] Q10 — Valides-tu cette approche** (stockage Epsilon + fichier `.py` exportable) ?
+
+---
+
+## 9. Architecture technique
+
+### 9.1 Choix
+
+- **Langage : C (C11)**, comme l'exemple officiel : code compact, rapide, pas de dépendances,
+  et compilable aussi sur PC pour les tests.
+- **Boucle à pas fixe** (30 images/s) : logique et rendu séparés ; seules les zones de l'écran qui
+  changent sont redessinées.
+- **Zéro `malloc`** : tout l'état du jeu est statique et de taille connue.
+- **Couche plateforme** : le jeu ne parle jamais directement à EADK. Deux implémentations :
+  - `platform_eadk.c` → la calculatrice (`.nwa`) ;
+  - `platform_host.c` → PC (fenêtre SDL2, ou mode sans écran qui produit des captures PNG) pour
+    tester, déboguer et faire tourner les tests automatiques.
+
+### 9.2 Arborescence prévue
+
+```
+Pet-Simultator-Numworks/
+├── Makefile                 make (→ .nwa), make host, make test
+├── src/
+│   ├── main.c               boucle principale
+│   ├── platform/            platform.h, platform_eadk.c, platform_host.c
+│   ├── gfx/                 primitives, sprites (décompression), police, thème/couleurs
+│   ├── input/               touches, répétition, appuis longs
+│   ├── ui/                  widgets : boutons, cartes, barres, fenêtres, listes défilantes
+│   ├── screens/             farm, pets, eggs, hatch, zones, upgrades, index, quests
+│   ├── game/                state, farming, pets, eggs, economy, upgrades, progress,
+│   │                        quests, rng, numfmt (format 1K/1M/1B…)
+│   └── save/                serialize (format binaire versionné), storage (lib communautaire)
+├── data/                    zones/eggs/pets/breakables/upgrades/quests (.csv)
+├── assets/                  pets/, eggs/, ui/, icon.png (tes images originales)
+├── tools/                   gen_data.py, convert_images.py, balance_sim
+├── tests/                   tests unitaires sur PC (probabilités, économie, sauvegarde)
+└── docs/                    conception, installation, ajout de contenu
+```
+
+### 9.3 Compilation et installation (prévu)
+
+```sh
+# Outils : arm-none-eabi-gcc + Node.js (pour nwlink) + Python 3 (outils de conversion sur PC)
+make                # → output/petsim.nwa
+make host && ./output/petsim-host   # version PC pour tester
+make test           # tests automatiques
+```
+
+Installation : brancher la calculatrice en USB, aller sur `my.numworks.com/apps`, glisser le
+fichier `petsim.nwa` (ou `make run` avec nwlink).
+
+---
+
+## 10. Plan de développement progressif
+
+| Étape | Contenu | Résultat testable |
+|---|---|---|
+| **M0** | Squelette : build `.nwa` + build PC, barre haute/onglets, navigation, police, thème | App qui démarre, navigation entre écrans vides |
+| **M1** | Boucle jouable : 3 zones, farm, 2 œufs + animation, inventaire, équiper, sauvegarde + écran de test sauvegarde | **Premier jeu jouable sur calculatrice** |
+| **M2** | Upgrades, Index, tri/filtres, gestion des doublons | Progression complète sur 3 zones |
+| **M3** | Les 50 zones / œufs / pets + intégration de tes images | Contenu complet |
+| **M4** | Quêtes, succès, mécaniques choisies (§5) | Rejouabilité |
+| **M5** | Simulateur d'équilibrage, réglages, polish visuel, optimisation | Version 1.0 |
+
+Chaque étape sera compilée ; je te dirai exactement ce qui a été testé sur PC et ce qui reste à
+tester sur ta calculatrice.
+
+---
+
+## 11. Questions ouvertes (récapitulatif)
+
+1. **Modèle** (N0110/N0115/N0120) + **version d'Epsilon** + OS officiel ou modifié ?
+2. **Contenu PS99** : veux-tu les œufs n° 1 à 50 de PS99 (avec leurs zones) ? Ton lien pointe vers
+   la section « Egg 91-112 » : était-ce voulu ? Et comment récupérer les données (réseau, copier-coller,
+   recherche web) ?
+3. **Images** : quantité, format, taille ; œufs / objets / fonds / icône fournis ?
+4. **Farming** : semi-idle (on choisit une cible, les pets attaquent seuls, mode AUTO) **ou** aussi
+   une part active (OK = coup de pouce « tap ») ?
+5. **Pets sur les cibles** : tous les pets sur un même objet, ou répartis sur plusieurs objets ?
+6. **Durée** visée pour finir les 50 zones ?
+7. **Mécaniques** du §5 à retenir (et lesquelles pour la première version) ?
+8. **Inventaire** : pets empilés (×N) ou exemplaires individuels ? Taille de départ ? Supprimer un
+   pet rend-il quelque chose (coins/diamonds) ?
+9. **Diamonds** : sources validées (objets rares, coffres, quêtes, succès, index) ?
+10. **Sauvegarde** : approche §8.2 validée ?
+11. **Langue** de l'interface : français avec noms de pets en anglais (comme PS99) ?
+12. **Ouverture multiple** : dès le début, ou débloquée par upgrade (×1 → ×3 → ×8) ?
