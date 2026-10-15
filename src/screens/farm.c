@@ -28,7 +28,7 @@ typedef struct {
 
 static const breakable_type_t types[] = {
   {&spr_brk_coins, 1.0, 1.0, false, 60},
-  {&spr_brk_present, 2.5, 3.0, false, 20},
+  {&spr_brk_crate, 2.5, 3.0, false, 20},
   {&spr_brk_chest, 6.0, 8.0, false, 8},
   {&spr_brk_gems, 2.0, 1.0, true, 12},
 };
@@ -158,9 +158,9 @@ static void draw_slot(int i) {
   if (sel) y -= 2;
   int sx = x + (CARD_W - t->sprite->width) / 2;
   if (alive) {
-    gfx_sprite(t->sprite, sx, y + 6);
+    gfx_sprite(t->sprite, sx, y + 4);
   } else {
-    gfx_sprite_tint(t->sprite, sx, y + 6, RGB(140, 145, 160));
+    gfx_sprite_tint(t->sprite, sx, y + 4, RGB(140, 145, 160));
     char buf[8];
     uint32_t left = s->respawn_at - clock_ms;
     buf[0] = (char)('0' + (left + 999) / 1000);

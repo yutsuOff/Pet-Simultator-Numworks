@@ -392,7 +392,7 @@ fichier `petsim.nwa` (ou `make run` avec nwlink).
 | **M0** | Squelette : build `.nwa` + build PC, barre haute/onglets, navigation, police, thème | App qui démarre, navigation entre écrans vides |
 | **M1** | Boucle jouable : farm, œufs + animation, inventaire, équiper, zones, index *(fait, avec le contenu PS99)* ; sauvegarde + écran de test sauvegarde *(à faire)* | **Premier jeu jouable sur calculatrice** |
 | **M2** | Upgrades, Index, tri/filtres, gestion des doublons | Progression complète sur 3 zones |
-| **M3** | Contenu complet : 50 œufs, 37 zones, 140 pets du wiki PS99 *(fait)* ; images des objets à casser et des onglets *(à faire)* | Contenu complet |
+| **M3** | Contenu complet : 50 œufs, 37 zones, 140 pets du wiki PS99 *(fait)* ; pièce, diamant et objets à casser *(fait)* ; icônes des onglets *(à faire)* | Contenu complet |
 | **M4** | Quêtes, succès, mécaniques choisies (§5) | Rejouabilité |
 | **M5** | Simulateur d'équilibrage, réglages, polish visuel, optimisation | Version 1.0 |
 
@@ -405,8 +405,8 @@ tester sur ta calculatrice.
 
 1. ~~Modèle~~ : N0120, Epsilon 26.4.0.
 2. ~~Contenu PS99~~ : fait (œufs 1 à 50 et leurs 37 zones, depuis le wiki).
-3. **Images** : pets, œufs et zones viennent du wiki. Restent les objets à casser, les onglets et
-   l'icône : les fournis-tu ?
+3. **Images** : pets, œufs et zones viennent du wiki ; pièce, diamant et objets à casser fournis.
+   Restent les icônes des onglets et l'icône de l'app.
 4. **Farming** : semi-idle (on choisit une cible, les pets attaquent seuls, mode AUTO) **ou** aussi
    une part active (OK = coup de pouce « tap ») ?
 5. **Pets sur les cibles** : tous les pets sur un même objet, ou répartis sur plusieurs objets ?
