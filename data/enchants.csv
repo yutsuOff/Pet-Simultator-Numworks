@@ -1,0 +1,19 @@
+type,tier,effect_percent,wiki_name,image
+coins,1,20,Coins,items/enchant_coins_1.png
+coins,2,40,Coins,items/enchant_coins_2.png
+coins,3,60,Coins,items/enchant_coins_3.png
+diamonds,1,10,Diamonds,items/enchant_diamonds_1.png
+diamonds,2,20,Diamonds,items/enchant_diamonds_2.png
+diamonds,3,30,Diamonds,items/enchant_diamonds_3.png
+lucky,1,15,Lucky Eggs,items/enchant_lucky_1.png
+lucky,2,30,Lucky Eggs,items/enchant_lucky_2.png
+lucky,3,50,Lucky Eggs,items/enchant_lucky_3.png
+strong,1,15,Strong Pets,items/enchant_strong_1.png
+strong,2,25,Strong Pets,items/enchant_strong_2.png
+strong,3,40,Strong Pets,items/enchant_strong_3.png
+tap,1,25,Tap Power,items/enchant_tap_1.png
+tap,2,50,Tap Power,items/enchant_tap_2.png
+tap,3,100,Tap Power,items/enchant_tap_3.png
+treasure,1,10,Treasure Hunter,items/enchant_treasure_1.png
+treasure,2,15,Treasure Hunter,items/enchant_treasure_2.png
+treasure,3,20,Treasure Hunter,items/enchant_treasure_3.png

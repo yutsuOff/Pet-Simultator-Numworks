@@ -52,4 +52,9 @@ void gfx_sprite_scaled(const sprite_t *s, int x, int y, int scale);
 
 color_t gfx_mix(color_t a, color_t b, int alpha /* 0..255, weight of b */);
 
+/* Recoloring of the next sprites drawn (golden and rainbow pets); phase animates the
+ * rainbow. Reset with GFX_EFFECT_NONE. */
+enum { GFX_EFFECT_NONE, GFX_EFFECT_GOLDEN, GFX_EFFECT_RAINBOW };
+void gfx_set_effect(int effect, int phase);
+
 #endif

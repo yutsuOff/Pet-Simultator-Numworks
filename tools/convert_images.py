@@ -40,7 +40,7 @@ def palettize(img):
     px = [tuple(raw[i:i + 4]) for i in range(0, len(raw), 4)]
     keys = [to_key(*p) for p in px]
     colors = sorted(set(k for k in keys if k))
-    if len(colors) > 255:
+    if len(colors) > 254:  # index 0 is transparent: at most 255 entries in all
         # Too many colors: quantize the RGB part, keep the alpha channel.
         alpha = img.getchannel("A")
         rgb = img.convert("RGB").quantize(colors=255 // 4, method=Image.Quantize.MEDIANCUT).convert("RGB")

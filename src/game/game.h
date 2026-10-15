@@ -8,8 +8,30 @@
 #define BASE_TEAM 5       /* equipped pets at the start */
 #define MAX_TEAM 8        /* with every "Équipe" upgrade */
 #define NO_PET 0xFF
+#define NO_ITEM 0xFF
 #define START_COINS 100   /* enough for the first Cracked Egg */
 #define MAX_HATCH 3       /* eggs opened at once with every "Ouverture multiple" upgrade */
+
+/* --- Pet variants: (normal, golden, rainbow) x (shiny or not) --- */
+enum { VAR_NORMAL, VAR_GOLDEN, VAR_RAINBOW, VAR_SHINY /* + level */, VARIANT_COUNT = 6 };
+static inline int variant_level(int v) { return v % 3; }
+static inline bool variant_shiny(int v) { return v >= VAR_SHINY; }
+
+/* Hatch odds of the variants and huges (per million, rolled on every egg). */
+#define RAINBOW_PER_MILLION 5000  /* 0.5 % */
+#define GOLDEN_PER_MILLION 20000  /* 2 % */
+#define SHINY_PER_MILLION 1000    /* 1 in 1,000 */
+#define HUGE_ODDS 50000           /* 1 in 50,000 for a huge (one of the HUGE_COUNT, at random) */
+
+/* Machines (PS99): 10 identical pets -> 1 of the next level. They stand in a zone. */
+#define MACHINE_INPUT 10
+#define GOLDEN_MACHINE_ZONE 6     /* zone 7: Farm */
+#define RAINBOW_MACHINE_ZONE 13   /* zone 14: Mushroom Field */
+
+#define MAX_REBIRTH 1             /* zones above 37 (future) will need 1 rebirth */
+#define MAX_ENCHANT_SLOTS 5
+#define QUEST_SLOTS 4             /* 1, 2, 3 and 4 star quests (PS99: 3 from rank 2, 4 from rank 5) */
+#define NO_QUEST 0xFFFF
 
 /* Upgrades (AMÉLIO. screen), bought with diamonds. */
 enum {
@@ -32,69 +54,127 @@ typedef struct {
 
 extern const upgrade_t upgrades[UPG_COUNT];
 
+typedef struct {
+  uint8_t pet, variant;
+} team_slot_t;
+
 /* Whole persistent game state. Statically allocated (no malloc). */
 typedef struct {
   double coins;
   double diamonds;
   uint8_t zone;            /* current zone */
   uint8_t zones_unlocked;  /* zones [0, zones_unlocked) are unlocked */
-  uint16_t owned[PET_COUNT];                 /* pets are stacked: count per pet */
+  uint16_t owned[PET_COUNT][VARIANT_COUNT];  /* pets are stacked: count per pet and variant */
   uint8_t discovered[(PET_COUNT + 7) / 8];   /* hatched at least once (index) */
-  uint8_t team[MAX_TEAM];                    /* equipped pets, NO_PET if empty */
+  team_slot_t team[MAX_TEAM];                /* equipped pets, pet NO_PET if empty */
   uint32_t eggs_opened;
   uint8_t upgrade_level[UPG_COUNT];
   uint8_t egg_rewarded[(EGG_COUNT + 7) / 8]; /* index reward of the egg already given */
+  /* items */
+  uint16_t potions_owned[POTION_COUNT];
+  uint16_t enchants_owned[ENCHANT_COUNT];
+  uint8_t enchant_slot[MAX_ENCHANT_SLOTS];   /* equipped enchant, NO_ITEM if empty */
+  uint8_t boost_tier[POTION_TYPE_COUNT];     /* active potion tier per type, 0 if none */
+  uint32_t boost_ms[POTION_TYPE_COUNT];      /* time left (only counts while playing) */
+  /* ranks and quests */
+  uint8_t rank;                              /* index in ranks[] */
+  uint8_t next_reward;                       /* next reward of the rank */
+  uint16_t star_bank;                        /* stars earned, not spent on rewards yet */
+  uint16_t quest_goal[QUEST_SLOTS];          /* index in rank_goals, NO_QUEST if none */
+  uint32_t quest_progress[QUEST_SLOTS];
+  uint8_t rebirths;
 } game_t;
 
 extern game_t game;
+/* Random source of the game (platform_random on the calculator, fixed in tests). */
+extern uint32_t (*game_random)(void);
+/* PC screenshots only: the next egg gives a huge. */
+extern bool game_debug_next_huge;
 
 void game_init(void);
 
 /* --- Pets and team --- */
 bool game_discovered(int pet);
 int game_discovered_count(void);
-int game_team_slots(void);         /* BASE_TEAM + "Équipe" upgrade */
-int game_equipped_count(int pet);  /* copies of this pet in the team */
+int game_owned_total(int pet);      /* every variant */
+int game_team_slots(void);          /* BASE_TEAM + "Équipe" upgrade */
+int game_equipped_count(int pet, int variant);
 int game_team_size(void);
-double game_pet_power(int pet);    /* with the damage upgrade */
-double game_team_power(void);      /* damage per second of the whole team */
-bool game_equip(int pet);          /* adds one copy to the team; false if full or none left */
-bool game_unequip(int pet);        /* removes one copy from the team */
-void game_equip_best(void);        /* fills the team with the strongest pets owned */
+double game_pet_power(int pet, int variant); /* with every bonus */
+double game_team_power(void);       /* damage per second of the whole team */
+bool game_equip(int pet, int variant);   /* adds one copy to the team; false if full or none left */
+bool game_unequip(int pet, int variant); /* removes one copy from the team */
+void game_equip_best(void);         /* fills the team with the strongest pets owned */
 /* Duplicates: copies beyond one (and beyond the equipped ones) are sold for coins. */
-int game_duplicates(int pet);
-double game_recycle_value(int pet); /* coins for one copy */
-double game_recycle_all(int *count); /* sells every duplicate, returns the coins */
+int game_duplicates(int pet, int variant);
+double game_recycle_value(int pet, int variant); /* coins for one copy */
+double game_recycle_all(int *count);  /* sells every duplicate, returns the coins */
+
+/* --- Machines --- */
+int game_machine_available(int pet, int variant); /* copies that can go in a machine */
+/* Turns MACHINE_INPUT copies of (pet, variant) into 1 of the next level. */
+bool game_machine_make(int pet, int variant);
 
 /* --- Eggs --- */
-/* Hatch weight of a slot with the luck upgrade: pets rarer than 20 % in the egg
- * get +10 % per level, then the egg is renormalized (the chances shown are exact). */
+/* Hatch weight of a slot with luck: pets rarer than 20 % in the egg get +luck %,
+ * then the egg is renormalized (the chances shown are exact). */
 uint32_t egg_slot_weight(int slot);
 double egg_slot_chance(int slot);  /* exact chance, 0..1 */
 /* Weighted draw: returns the slot index (in egg_slots). Unbiased. */
 int egg_roll(int egg, uint32_t (*rand32)(void));
 bool game_egg_available(int egg);  /* its zone is unlocked */
+int game_best_egg(void);           /* the most expensive egg available */
 int game_hatch_count(void);        /* eggs opened at once (1 to MAX_HATCH) */
-/* Buys and opens one egg. Returns the pet index, or -1 if not affordable/available.
- * *is_new is set when the pet was never hatched before. */
-int game_open_egg(int egg, uint32_t (*rand32)(void), bool *is_new);
+typedef struct {
+  uint8_t pet, variant;
+  bool is_new;
+} hatch_t;
+/* Buys and opens one egg (huge 1/50,000, then variants). False if not affordable. */
+bool game_open_egg(int egg, hatch_t *out);
 
 /* --- Index rewards --- */
 #define INDEX_STEP 20      /* every 20 pets discovered: +5 % coins */
 bool game_egg_complete(int egg);
 double game_egg_reward(int egg);   /* diamonds for completing an egg */
-/* Gives the rewards of newly completed eggs. Returns the diamonds given. */
-double game_claim_index_rewards(void);
+double game_claim_index_rewards(void); /* rewards of newly completed eggs, returns the diamonds */
 
-/* --- Zones --- */
+/* --- Zones and rebirth --- */
 bool game_unlock_next_zone(void);  /* buys zone zones_unlocked if affordable */
+bool game_can_rebirth(void);
+void game_rebirth(void);           /* coins and zones back to the start, +75 % pet strength */
 
-/* --- Upgrades and bonuses --- */
+/* --- Upgrades and bonuses (upgrades x potions x enchants x rebirths) --- */
 double upgrade_cost(int id);       /* cost of the next level */
 bool game_buy_upgrade(int id);
-double game_coin_bonus(void);      /* multiplier: upgrade x index milestones */
+double game_coin_bonus(void);
 double game_diamond_bonus(void);
 double game_tap_bonus(void);
+double game_luck_percent(void);    /* extra weight of the rare pets */
+double game_drop_bonus(void);      /* treasure hunter */
 uint32_t game_respawn_ms(void);
+
+/* --- Items (items.c) --- */
+int game_enchant_slots(void);      /* from the rank */
+bool game_use_potion(int potion);
+bool game_equip_enchant(int enchant);   /* in the first free slot */
+bool game_unequip_enchant(int slot);
+int game_enchant_equipped(int enchant); /* copies in the slots */
+double game_boost_percent(int potion_type);   /* active potion */
+double game_enchant_percent(int enchant_type);/* equipped enchants, diminishing returns */
+void game_tick_boosts(uint32_t elapsed_ms);
+/* Random drop when a breakable breaks (rarity: 1 coin .. 6 chest). Returns the potion
+ * (0..) or enchant (100..) index given, or -1. */
+int game_roll_drop(double rarity);
+void game_give_potion(int potion, int n);
+void game_give_enchant(int enchant, int n);
+
+/* --- Quests and ranks (quests.c) --- */
+void quest_event(int kind, double amount, int tier); /* progress of the active quests */
+void quests_refill(void);          /* gives a goal to the empty quest slots */
+/* Completes finished quests and pays the rewards. Returns the stars earned (0 if none);
+ * *ranked_up is set on a new rank. */
+int quests_update(bool *ranked_up);
+int quest_rank_stars(void);        /* stars already spent in the current rank */
+void quest_text(int slot, char *buf); /* "Casse 25 objets" */
 
 #endif

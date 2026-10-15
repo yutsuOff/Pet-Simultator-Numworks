@@ -23,9 +23,9 @@
 static int selected, scroll;
 static bool hatching;
 static int hatch_egg, hatch_count;
-static int hatch_pets[MAX_HATCH];
-static bool hatch_new[MAX_HATCH];
+static hatch_t hatch[MAX_HATCH];
 static int hatch_tier; /* best tier of the batch: drives the animation */
+static bool hatch_huge; /* a huge in the batch: special animation */
 static char reward_text[48];
 static uint32_t hatch_start, clock_ms;
 
@@ -42,7 +42,7 @@ static int last_available(void) {
   return e;
 }
 
-static uint32_t shake_ms(void) { return SHAKE_MS + hatch_tier * 250; }
+static uint32_t shake_ms(void) { return hatch_huge ? 2600 : SHAKE_MS + hatch_tier * 250; }
 static uint32_t reveal_ms(void) { return shake_ms() + CRACK_MS + FLASH_MS; }
 
 static void enter(void) {
@@ -64,11 +64,13 @@ static void open_egg(uint32_t now) {
   }
   hatch_count = 0;
   hatch_tier = 0;
+  hatch_huge = false;
   for (int i = 0; i < game_hatch_count(); i++) {
-    int pet = game_open_egg(selected, platform_random, &hatch_new[hatch_count]);
-    if (pet < 0) break;
-    hatch_pets[hatch_count++] = pet;
-    if (pets[pet].tier > hatch_tier) hatch_tier = pets[pet].tier;
+    if (!game_open_egg(selected, &hatch[hatch_count])) break;
+    const pet_t *p = &pets[hatch[hatch_count].pet];
+    if (p->tier > hatch_tier) hatch_tier = p->tier;
+    hatch_huge |= p->huge;
+    hatch_count++;
   }
   if (!hatch_count) {
     ui_message("Pas assez de coins", now);
@@ -92,7 +94,10 @@ static void open_egg(uint32_t now) {
 static int update_hatch(const input_t *in, uint32_t now) {
   uint32_t t = now - hatch_start;
   int r = t < reveal_ms() + 400 ? SCREEN_REDRAW_CONTENT : 0;
-  if (hatch_tier == TIER_MYTHICAL && (now / 100) != ((now - 33) / 100)) r |= SCREEN_REDRAW_CONTENT;
+  for (int k = 0; k < hatch_count; k++) {
+    if (hatch[k].variant != VAR_NORMAL && (now / 100) != ((now - 33) / 100)) r |= SCREEN_REDRAW_CONTENT;
+  }
+  if (hatch_tier >= TIER_MYTHICAL && (now / 100) != ((now - 33) / 100)) r |= SCREEN_REDRAW_CONTENT;
   if (input_pressed(in, KEY_BACK)) {
     hatching = false;
     return SCREEN_REDRAW_CONTENT | SCREEN_USED_BACK;
@@ -225,10 +230,30 @@ static int column(int i) { return hatch_count == 1 ? 160 : hatch_count == 2 ? 10
 
 static void chance_text(int pet, char *buf) {
   buf[0] = 0;
+  if (pets[pet].huge) {
+    for (const char *src = "1/50 000"; (*buf++ = *src++);) {}
+    return;
+  }
   for (int s = eggs[hatch_egg].first_slot; s < eggs[hatch_egg].first_slot + eggs[hatch_egg].slot_count; s++) {
     if (egg_slots[s].pet != pet) continue;
     if (egg_slots[s].secret) buf[0] = '?', buf[1] = '?', buf[2] = 0;
     else pctfmt(egg_slot_chance(s), buf);
+  }
+}
+
+/* "Golden", "Shiny Rainbow"... or NULL for a normal pet */
+static const char *variant_label(int v) {
+  static const char *const labels[VARIANT_COUNT] = {0, "Golden", "Rainbow", "Shiny", "Shiny Golden", "Shiny Rainbow"};
+  return labels[v];
+}
+
+static void draw_star(int x, int y, int r, color_t c) { /* 4-branch sparkle */
+  for (int k = 0; k <= r; k++) {
+    int w = (r - k) / 2;
+    gfx_fill_rect(x - w, y - k, 2 * w + 1, 1, c);
+    gfx_fill_rect(x - w, y + k, 2 * w + 1, 1, c);
+    gfx_fill_rect(x - k, y - w, 1, 2 * w + 1, c);
+    gfx_fill_rect(x + k, y - w, 1, 2 * w + 1, c);
   }
 }
 
@@ -239,8 +264,12 @@ static void draw_hatch(void) {
   if (t < reveal_ms()) {
     gfx_vgradient(0, CONTENT_Y, 320, CONTENT_H, COL_BAR_LIGHT, COL_SHADOW);
     uint32_t shake = shake_ms();
+    if (hatch_huge && t > 600) { /* the screen darkens and pulses before a huge */
+      int pulse = (int)((t / 120) % 2) * 40;
+      gfx_blend_rect(0, CONTENT_Y, 320, CONTENT_H, COL_RARITY_EXCLUSIVE, 40 + pulse);
+    }
     if (t < shake + CRACK_MS) {
-      int amp = t < shake ? 1 + (int)(t * 6 / shake) : 7;
+      int amp = t < shake ? 1 + (int)(t * (hatch_huge ? 10 : 6) / shake) : 7;
       for (int i = 0; i < hatch_count; i++) {
         int cx = column(i);
         int dx = ((t / 70 + i) & 1) ? amp : -amp;
@@ -248,8 +277,8 @@ static void draw_hatch(void) {
         gfx_sprite_scaled(eggs[hatch_egg].sprite, cx - 48 + dx, cy - 48, 2);
         if (t >= shake) draw_crack(cx + dx, cy, 1 + (int)((t - shake) * 7 / CRACK_MS));
       }
-      gfx_text_aligned(&font_medium, 0, CONTENT_Y + CONTENT_H - 26, 320, ALIGN_CENTER, eggs[hatch_egg].name,
-                       COL_WHITE);
+      const char *label = hatch_huge && t > 1200 ? "Quelque chose d'énorme arrive..." : eggs[hatch_egg].name;
+      gfx_text_aligned(&font_medium, 0, CONTENT_Y + CONTENT_H - 26, 320, ALIGN_CENTER, label, COL_WHITE);
     } else {
       /* flash, tinted by the rarity */
       int a = 255 - (int)((t - shake - CRACK_MS) * 255 / FLASH_MS);
@@ -261,42 +290,62 @@ static void draw_hatch(void) {
   /* reveal */
   uint32_t rt = t - reveal_ms();
   cy = CONTENT_Y + 70;
-  if (hatch_tier == TIER_MYTHICAL) draw_rainbow(CONTENT_Y, CONTENT_H, clock_ms);
+  if (hatch_tier >= TIER_MYTHICAL) draw_rainbow(CONTENT_Y, CONTENT_H, clock_ms);
   else gfx_vgradient(0, CONTENT_Y, 320, CONTENT_H, gfx_mix(COL_WHITE, tc, 90), gfx_mix(tc, COL_SHADOW, 40));
-  int bounce = rt < 300 ? (int)(300 - rt) / 15 : 0;
-  for (int k = 0; k < hatch_count; k++) {
-    const pet_t *p = &pets[hatch_pets[k]];
-    color_t pc = ui_tier_color(p->tier);
-    int cx = column(k);
-    for (int i = 3; i >= 1; i--) {
-      int r = hatch_count == 1 ? 38 + i * 8 : 30 + i * 6;
-      gfx_round_rect(cx - r, cy - r + 4, 2 * r, 2 * r, r, gfx_mix(pc, COL_WHITE, 70 + i * 50));
+  if (hatch_huge) { /* sparkles all over the screen and a big title */
+    for (int i = 0; i < 10; i++) {
+      uint32_t h = (clock_ms / 180 + (uint32_t)i * 13) * 2654435761u;
+      draw_star((int)(h % 320), CONTENT_Y + 4 + (int)((h >> 10) % (CONTENT_H - 8)), 2 + (int)((h >> 20) % 4), COL_WHITE);
     }
-    gfx_sprite_scaled(p->sprite, cx - 48, cy - 44 - bounce, 2);
-    char chance[16];
-    chance_text(hatch_pets[k], chance);
+  }
+  int bounce = rt < 300 ? (int)(300 - rt) / 15 : 0;
+  bool big = hatch_count == 1 && hatch_huge;
+  for (int k = 0; k < hatch_count; k++) {
+    const pet_t *p = &pets[hatch[k].pet];
+    color_t pc = ui_tier_color(p->tier);
+    int cx = column(k), pcy = big ? CONTENT_Y + 80 : cy;
+    for (int i = 3; i >= 1; i--) {
+      int r = big ? 42 + i * 9 : hatch_count == 1 ? 38 + i * 8 : 30 + i * 6;
+      gfx_round_rect(cx - r, pcy - r + 4, 2 * r, 2 * r, r, gfx_mix(pc, COL_WHITE, 70 + i * 50));
+    }
+    ui_pet(hatch[k].pet, hatch[k].variant, cx - 48, pcy - 44 - bounce, PET_X2, clock_ms);
+    char name[48], chance[16];
+    ui_pet_name(hatch[k].pet, hatch[k].variant, name);
+    chance_text(hatch[k].pet, chance);
     const char *tier = ui_tier_name(p->tier);
+    const char *label = variant_label(hatch[k].variant);
     int pw = gfx_text_width(&font_small, tier) + 10, cw = gfx_text_width(&font_small, chance) + 10;
     int ty = CONTENT_Y + 138;
-    if (hatch_count == 1) {
-      if (hatch_new[k]) ui_pill(cx + 40, CONTENT_Y + 10, "NOUVEAU !", COL_GOLD_DARK, COL_WHITE);
-      gfx_text_aligned(&font_big, 1, ty + 1, 320, ALIGN_CENTER, p->name, COL_SHADOW);
-      gfx_text_aligned(&font_big, 0, ty, 320, ALIGN_CENTER, p->name, COL_WHITE);
+    if (big) {
+      int sw = gfx_text_width(&font_big, "HUGE !");
+      int wob = (int)((clock_ms / 90) % 4) - 2;
+      gfx_text_shadow(&font_big, 160 - sw / 2 + wob, CONTENT_Y + 6, "HUGE !", COL_GOLD, COL_SHADOW);
+      gfx_text_aligned(&font_big, 1, CONTENT_Y + 147, 320, ALIGN_CENTER, name, COL_SHADOW);
+      gfx_text_aligned(&font_big, 0, CONTENT_Y + 146, 320, ALIGN_CENTER, name, COL_WHITE);
+      int px = (320 - pw - cw - 6) / 2;
+      ui_pill(px, CONTENT_Y + 166, tier, gfx_mix(pc, COL_SHADOW, 50), COL_WHITE);
+      ui_pill(px + pw + 6, CONTENT_Y + 166, chance, COL_BAR, COL_WHITE);
+    } else if (hatch_count == 1) {
+      if (hatch[k].is_new) ui_pill(cx + 40, CONTENT_Y + 10, "NOUVEAU !", COL_GOLD_DARK, COL_WHITE);
+      if (label) ui_pill(cx - 100, CONTENT_Y + 10, label, COL_BAR, COL_GOLD);
+      gfx_text_aligned(&font_big, 1, ty + 1, 320, ALIGN_CENTER, name, COL_SHADOW);
+      gfx_text_aligned(&font_big, 0, ty, 320, ALIGN_CENTER, name, COL_WHITE);
       int px = (320 - pw - cw - 6) / 2;
       ui_pill(px, ty + 25, tier, gfx_mix(pc, COL_SHADOW, 50), COL_WHITE);
       ui_pill(px + pw + 6, ty + 25, chance, COL_BAR, COL_WHITE);
     } else {
-      if (hatch_new[k]) {
-        int nw = gfx_text_width(&font_small, "NOUVEAU") + 10;
-        ui_pill(cx - nw / 2, CONTENT_Y + 6, "NOUVEAU", COL_GOLD_DARK, COL_WHITE);
+      if (hatch[k].is_new || p->huge) {
+        const char *tag = p->huge ? "HUGE !" : "NOUVEAU";
+        int nw = gfx_text_width(&font_small, tag) + 10;
+        ui_pill(cx - nw / 2, CONTENT_Y + 6, tag, p->huge ? COL_RARITY_EXCLUSIVE : COL_GOLD_DARK, COL_WHITE);
       }
-      gfx_text_aligned(&font_small, cx - 52 + 1, ty + 1, 104, ALIGN_CENTER, p->name, COL_SHADOW);
-      gfx_text_aligned(&font_small, cx - 52, ty, 104, ALIGN_CENTER, p->name, COL_WHITE);
+      gfx_text_aligned(&font_small, cx - 52 + 1, ty + 1, 104, ALIGN_CENTER, name, COL_SHADOW);
+      gfx_text_aligned(&font_small, cx - 52, ty, 104, ALIGN_CENTER, name, COL_WHITE);
       ui_pill(cx - pw / 2, ty + 15, tier, gfx_mix(pc, COL_SHADOW, 50), COL_WHITE);
       ui_pill(cx - cw / 2, ty + 31, chance, COL_BAR, COL_WHITE);
     }
   }
-  gfx_text_aligned(&font_small, 0, CONTENT_Y + CONTENT_H - 14, 320, ALIGN_CENTER,
+  gfx_text_aligned(&font_small, 0, CONTENT_Y + CONTENT_H - 13, 320, ALIGN_CENTER,
                    "OK : rouvrir   ·   Retour : fermer", COL_WHITE);
 }
 

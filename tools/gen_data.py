@@ -10,7 +10,11 @@ computed here by the game rules below, so they are easy to tune in one place:
     exactly 1,000,000,000; a chance shown "??" on the wiki gets SECRET_PERCENT;
   - rarity tier of a pet (all egg pets are "Basic" on the PS99 wiki): from its chance in
     its home egg (the last egg that contains it);
-  - pet power, breakable HP and rewards: provisional balancing (docs/CONCEPTION.md §6).
+  - pet power, breakable HP and rewards: provisional balancing (docs/CONCEPTION.md §6);
+  - huge pets (data/huges.csv, Exclusive): HUGE_POWER x the strongest egg pet;
+  - rank rewards: diamond bags x DIAMOND_REWARD_SCALE; rewards the game does not have
+    (fruits, flags, toys...) become SKIPPED_REWARD_DIAMONDS x rank diamonds; quest goals
+    the game does not have are left out.
 """
 import csv
 import os
@@ -33,7 +37,15 @@ PET_POWER_GROWTH = 1.35         # x per egg number
 PILE_HP_PETS = 4.0              # a coin pile of zone z has the HP of 4 basic pets of its first egg
 SECONDS_PER_ZONE = 250.0        # a coin pile gives cost(next zone) / this
 
+HUGE_POWER = 3.0                # a huge = 3 x the strongest egg pet
+DIAMOND_REWARD_SCALE = 0.1      # diamonds are rarer than in PS99 (6 h game)
+SKIPPED_REWARD_DIAMONDS = 2     # x rank number
+QUEST_KINDS = ["break_any", "break_best", "break_diamond", "break_coin", "break_crate", "break_gift",
+               "break_chest", "earn_diamonds", "hatch_any", "hatch_best", "hatch_legendary", "make_golden",
+               "make_rainbow", "unlock_area", "collect_potion", "collect_enchant", "use_potion"]
+
 PET_SIZE = (48, 48)
+ITEM_SIZE = (32, 32)
 EGG_SIZE = (48, 48)
 THUMB_SIZE = (64, 36)
 
@@ -140,12 +152,48 @@ def main():
         egg, percent, _ = home[i]
         tier = next(t for t in TIERS if percent >= t[1])
         power = PET_BASE_POWER * PET_POWER_GROWTH ** egg * tier[2]
-        pet_rows.append((p["pet"], egg, tier[0], float(f"{power:.3g}")))
+        pet_rows.append((p["pet"], egg, tier[0], float(f"{power:.3g}"), 0, "assets/" + p["image"]))
+    huges = read("huges")
+    strongest = max(r[3] for r in pet_rows)
+    for h in huges:
+        pet_rows.append((h["pet"], 0, "TIER_EXCLUSIVE", float(f"{strongest * HUGE_POWER:.3g}"), 1,
+                         "assets/" + h["image"]))
 
+    # items and ranks
+    potions, enchants = read("potions"), read("enchants")
+    potion_types = list(dict.fromkeys(p["type"] for p in potions))
+    enchant_types = list(dict.fromkeys(e["type"] for e in enchants))
+    for rows, types in ((potions, potion_types), (enchants, enchant_types)):
+        for i, r in enumerate(rows):  # index = type * 3 + tier - 1
+            if types.index(r["type"]) * 3 + int(r["tier"]) - 1 != i:
+                sys.exit("potions/enchants must be listed by type, tiers 1 to 3")
+    ranks, rewards, goals = read("ranks"), read("rank_rewards"), read("rank_goals")
+    reward_rows, goal_rows, rank_rows = [], [], []
+    for r in ranks:
+        n = int(r["rank"])
+        first_reward, first_goal = len(reward_rows), len(goal_rows)
+        for w in (x for x in rewards if int(x["rank"]) == n):
+            qty = int(w["quantity"])
+            if w["kind"] == "potion":
+                reward_rows.append((int(w["stars"]), "REWARD_POTION", potion_types.index(w["type"]) * 3 + int(w["tier"]) - 1, qty, w["reward_wiki"]))
+            elif w["kind"] == "enchant":
+                reward_rows.append((int(w["stars"]), "REWARD_ENCHANT", enchant_types.index(w["type"]) * 3 + int(w["tier"]) - 1, qty, w["reward_wiki"]))
+            elif w["kind"] == "diamonds":
+                reward_rows.append((int(w["stars"]), "REWARD_DIAMONDS", 0, max(1, round(qty * DIAMOND_REWARD_SCALE)), w["reward_wiki"]))
+            else:
+                reward_rows.append((int(w["stars"]), "REWARD_DIAMONDS", 0, SKIPPED_REWARD_DIAMONDS * n, w["reward_wiki"] + " (absent du jeu)"))
+        for g in (x for x in goals if int(x["rank"]) == n and x["kind"] != "skip"):
+            goal_rows.append((int(g["stars"]), "QUEST_" + g["kind"].upper(), int(g["potion_tier"]), int(g["amount"]), g["goal_wiki"]))
+        rank_rows.append((r["name"], sum(w[0] for w in reward_rows[first_reward:]), first_reward,
+                          len(reward_rows) - first_reward, first_goal, len(goal_rows) - first_goal))
     # zones: eggs, colors, breakables
     zone_eggs = {i: [] for i in range(len(zones))}
     for ei, e in enumerate(eggs):
         zone_eggs[zone_index[int(e["area"])]].append(ei)
+    # per-zone reward scale computed by tools/calibrate_balance.py (time per zone)
+    scale = {}
+    if os.path.exists("data/balance.csv"):
+        scale = {int(r["zone"]): float(r["reward_scale"]) for r in read("balance")}
     zone_rows = []
     for zi, z in enumerate(zones):
         if not zone_eggs[zi]:
@@ -155,17 +203,22 @@ def main():
         cost = float(z["cost_coins"])
         nxt = float(zones[zi + 1]["cost_coins"]) if zi + 1 < len(zones) else \
             cost * cost / float(zones[zi - 1]["cost_coins"])
-        reward = nxt / SECONDS_PER_ZONE
+        reward = nxt / SECONDS_PER_ZONE * scale.get(zi, 1.0)
         zone_rows.append((z, first, len(zone_eggs[zi]), cost, float(f"{hp:.3g}"), float(f"{reward:.3g}"),
                           zone_colors("assets/" + z["image"])))
 
     c = ["/* Generated by tools/gen_data.py from data/ and assets/ - do not edit. */",
          '#include "content.h"', ""]
     flash = 0
-    for i, p in enumerate(pets):
-        lines, size = sprite_c(f"pet_spr_{i}", fit("assets/" + p["image"], PET_SIZE), "static ")
+    for i, row in enumerate(pet_rows):
+        lines, size = sprite_c(f"pet_spr_{i}", fit(row[5], PET_SIZE), "static ")
         c += lines
         flash += size
+    for kind, rows in (("potion", potions), ("enchant", enchants)):
+        for i, r in enumerate(rows):
+            lines, size = sprite_c(f"{kind}_spr_{i}", fit("assets/" + r["image"], ITEM_SIZE), "static ")
+            c += lines
+            flash += size
     for i, e in enumerate(eggs):
         lines, size = sprite_c(f"egg_spr_{i}", fit("assets/" + e["image"], EGG_SIZE), "static ")
         c += lines
@@ -176,8 +229,32 @@ def main():
         flash += size
 
     c.append("const pet_t pets[PET_COUNT] = {")
-    for i, (name, egg, tier, power) in enumerate(pet_rows):
-        c.append(f"  {{{c_str(name)}, &pet_spr_{i}, {power!r}, {tier}, {egg}}},")
+    for i, (name, egg, tier, power, huge, _) in enumerate(pet_rows):
+        c.append(f"  {{{c_str(name)}, &pet_spr_{i}, {power!r}, {tier}, {egg}, {huge}}},")
+    c.append("};")
+    c.append("")
+    c.append("const potion_t potions[POTION_COUNT] = {")
+    for i, r in enumerate(potions):
+        c.append(f"  {{{potion_types.index(r['type'])}, {r['tier']}, {r['effect_percent']}, {r['minutes']}, "
+                 f"&potion_spr_{i}}}, /* {r['wiki_name']} {r['tier']} */")
+    c.append("};")
+    c.append("const enchant_t enchants[ENCHANT_COUNT] = {")
+    for i, r in enumerate(enchants):
+        c.append(f"  {{{enchant_types.index(r['type'])}, {r['tier']}, {r['effect_percent']}, &enchant_spr_{i}}},"
+                 f" /* {r['wiki_name']} {r['tier']} */")
+    c.append("};")
+    c.append("")
+    c.append("const rank_t ranks[RANK_COUNT] = {")
+    for name, stars, fr, nr, fg, ng in rank_rows:
+        c.append(f"  {{{c_str(name)}, {stars}, {fr}, {nr}, {fg}, {ng}}},")
+    c.append("};")
+    c.append("const rank_reward_t rank_rewards[RANK_REWARD_COUNT] = {")
+    for stars, kind, item, qty, wiki in reward_rows:
+        c.append(f"  {{{stars}, {kind}, {item}, {qty}}}, /* {wiki} */")
+    c.append("};")
+    c.append("const rank_goal_t rank_goals[RANK_GOAL_COUNT] = {")
+    for stars, kind, tier, amount, wiki in goal_rows:
+        c.append(f"  {{{stars}, {kind}, {tier}, {amount}u}}, /* {wiki} */")
     c.append("};")
     c.append("")
     c.append("const egg_slot_t egg_slots[EGG_SLOT_COUNT] = {")
@@ -202,7 +279,17 @@ def main():
     h = ["/* Generated by tools/gen_data.py - do not edit. */",
          "#ifndef GENERATED_CONTENT_H", "#define GENERATED_CONTENT_H", "",
          '#include "../game/content_types.h"', "",
-         f"#define PET_COUNT {len(pets)}",
+         f"#define PET_COUNT {len(pet_rows)}",
+         f"#define HUGE_FIRST {len(pets)} /* huges: pets HUGE_FIRST.. PET_COUNT-1, in no egg */",
+         f"#define HUGE_COUNT {len(huges)}",
+         f"#define POTION_COUNT {len(potions)}",
+         f"#define ENCHANT_COUNT {len(enchants)}",
+         f"#define RANK_COUNT {len(rank_rows)}",
+         f"#define RANK_REWARD_COUNT {len(reward_rows)}",
+         f"#define RANK_GOAL_COUNT {len(goal_rows)}",
+         "enum { " + ", ".join(f"POTION_{t.upper()}" for t in potion_types) + ", POTION_TYPE_COUNT };",
+         "enum { " + ", ".join(f"ENCHANT_{t.upper()}" for t in enchant_types) + ", ENCHANT_TYPE_COUNT };",
+         "enum { " + ", ".join(f"QUEST_{k.upper()}" for k in QUEST_KINDS) + ", QUEST_KIND_COUNT };",
          f"#define EGG_COUNT {len(eggs)}",
          f"#define EGG_SLOT_COUNT {len(slots)}",
          f"#define ZONE_COUNT {len(zones)}",
@@ -210,7 +297,12 @@ def main():
          "extern const pet_t pets[PET_COUNT];",
          "extern const egg_slot_t egg_slots[EGG_SLOT_COUNT];",
          "extern const egg_t eggs[EGG_COUNT];",
-         "extern const zone_t zones[ZONE_COUNT];", "", "#endif", ""]
+         "extern const zone_t zones[ZONE_COUNT];",
+         "extern const potion_t potions[POTION_COUNT];",
+         "extern const enchant_t enchants[ENCHANT_COUNT];",
+         "extern const rank_t ranks[RANK_COUNT];",
+         "extern const rank_reward_t rank_rewards[RANK_REWARD_COUNT];",
+         "extern const rank_goal_t rank_goals[RANK_GOAL_COUNT];", "", "#endif", ""]
     with open(OUT + ".c", "w") as f:
         f.write("\n".join(c))
     with open(OUT + ".h", "w") as f:
@@ -218,7 +310,7 @@ def main():
     tiers = {}
     for row in pet_rows:
         tiers[row[2]] = tiers.get(row[2], 0) + 1
-    print(f"{OUT}.c: {len(zones)} zones, {len(eggs)} eggs, {len(pets)} pets, "
+    print(f"{OUT}.c: {len(zones)} zones, {len(eggs)} eggs, {len(pet_rows)} pets, {len(rank_rows)} ranks, "
           f"{flash // 1024} KB of images; tiers {tiers}")
 
 

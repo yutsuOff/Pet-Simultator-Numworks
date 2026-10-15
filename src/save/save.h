@@ -7,16 +7,18 @@
  *   # Pet Sim : sauvegarde (ne pas modifier)
  *   #<game state, binary + CRC32, in base64>
  *
- * The state is written again (in place) whenever it changed, at most every few
- * seconds, and when leaving the game. */
+ * The state is written again whenever it changed, at most every few seconds, and when
+ * leaving the game. The record keeps its size (rewritten in place) as long as the
+ * text fits; it grows (by steps of 512) only when it is the last record. */
 
 #include <stdbool.h>
 #include <stdint.h>
 #include "storage.h"
 
 #define SAVE_NAME "petsim.py"
-#define SAVE_VERSION 2
-#define SAVE_TEXT_CAPACITY 1024 /* fixed record size, so it is always rewritten in place */
+#define SAVE_VERSION 3
+#define SAVE_TEXT_CAPACITY 4096 /* largest text */
+#define SAVE_MIN_RECORD 1024    /* size of a new record */
 
 typedef enum {
   SAVE_NO_STORAGE,  /* Epsilon's storage not found: saving disabled */
@@ -26,7 +28,8 @@ typedef enum {
   SAVE_TOO_NEW,     /* written by a newer version of the game: saving disabled */
 } save_status_t;
 
-/* Text of the save for the current game state (NUL-terminated, < SAVE_TEXT_CAPACITY). */
+/* Text of the save for the current game state (NUL-terminated, < SAVE_TEXT_CAPACITY).
+ * Returns its length. */
 int save_encode(char *text);
 /* Restores the game from a save text. Returns false (game untouched) if invalid;
  * *too_new is set when the version is newer than this game. */

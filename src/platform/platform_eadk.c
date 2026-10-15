@@ -30,6 +30,7 @@ bool platform_end_frame(void) {
 }
 
 bool platform_debug_rich(void) { return false; }
+bool platform_debug_huge(void) { return false; }
 
 /* --- Epsilon's storage ---
  * Epsilon writes a "userland header" at the start of its userland, in each of the

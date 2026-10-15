@@ -87,9 +87,17 @@ def star(size=16, color=(255, 255, 255)):
     return img
 
 
+def flask(size=16, color=(255, 255, 255)):
+    img, d = canvas(size, size)
+    d.rectangle(s(6, 1.5, 10, 6), fill=color)
+    d.ellipse(s(2.5, 5, 13.5, 15), fill=color)
+    return img
+
+
 def main():
     for name, fn in [("tab_farm", coins_stack), ("tab_pets", paw), ("tab_eggs", egg), ("tab_zones", pin),
-                     ("tab_upgrades", arrow_up), ("tab_index", book), ("tab_quests", star)]:
+                     ("tab_upgrades", arrow_up), ("tab_index", book), ("tab_quests", star),
+                     ("tab_items", flask)]:
         save(fn(), name, 16, 16)
     print("placeholder art written to", OUT)
 

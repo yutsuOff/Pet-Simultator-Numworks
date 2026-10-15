@@ -35,5 +35,6 @@ bool platform_end_frame(void);
 bool platform_storage(uint8_t **records, size_t *size);
 /* PC screenshots only (petsim-host --rich): start with coins to show a later game. */
 bool platform_debug_rich(void);
+bool platform_debug_huge(void); /* petsim-host --huge: the first egg gives a huge */
 
 #endif

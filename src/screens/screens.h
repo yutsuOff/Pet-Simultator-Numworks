@@ -28,5 +28,6 @@ extern const screen_t screen_zones;
 extern const screen_t screen_upgrades;
 extern const screen_t screen_index;
 extern const screen_t screen_quests;
+extern const screen_t screen_items;
 
 #endif

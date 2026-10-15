@@ -10,14 +10,15 @@
 
 /* Game rarity tiers. Every egg pet is "Basic" on the PS99 wiki, so the tier comes
  * from the pet's hatch chance in its home egg (see tools/gen_data.py). */
-typedef enum { TIER_BASIC, TIER_RARE, TIER_EPIC, TIER_LEGENDARY, TIER_MYTHICAL, TIER_COUNT } tier_t;
+typedef enum { TIER_BASIC, TIER_RARE, TIER_EPIC, TIER_LEGENDARY, TIER_MYTHICAL, TIER_EXCLUSIVE, TIER_COUNT } tier_t;
 
 typedef struct {
   const char *name;
   const sprite_t *sprite; /* 48x48 */
   double power;           /* damage per second when equipped */
   uint8_t tier;
-  uint8_t egg; /* home egg: the last egg that contains it */
+  uint8_t egg; /* home egg: the last egg that contains it (huges: none, 0) */
+  bool huge;   /* Huge pet (Exclusive), can hatch from any egg */
 } pet_t;
 
 typedef struct {
@@ -45,5 +46,45 @@ typedef struct {
   double pile_hp;     /* HP of a coin pile in this zone (other breakables are multiples) */
   double pile_reward; /* coins of a coin pile */
 } zone_t;
+
+/* Potions (temporary boosts) and enchants (permanent while equipped), tiers 1 to 3.
+ * potions[type * 3 + tier - 1], same for enchants. */
+typedef struct {
+  uint8_t type, tier, percent;
+  uint16_t minutes;
+  const sprite_t *sprite; /* 32x32 */
+} potion_t;
+
+typedef struct {
+  uint8_t type, tier, percent;
+  const sprite_t *sprite; /* 32x32 */
+} enchant_t;
+
+/* Ranks: quests give stars, stars pay the rewards of the rank one by one; when every
+ * reward is given, the next rank starts. */
+enum { REWARD_DIAMONDS, REWARD_POTION, REWARD_ENCHANT };
+
+typedef struct {
+  uint8_t stars;    /* stars this reward costs */
+  uint8_t kind;     /* REWARD_* */
+  uint8_t item;     /* potion or enchant index */
+  uint16_t quantity;
+} rank_reward_t;
+
+typedef struct {
+  uint8_t stars;       /* 1 to 4: quest slot */
+  uint8_t kind;        /* QUEST_* (generated) */
+  uint8_t potion_tier; /* QUEST_USE_POTION: minimum tier */
+  uint32_t amount;
+} rank_goal_t;
+
+typedef struct {
+  const char *name;
+  uint16_t stars_total;
+  uint16_t first_reward;
+  uint8_t reward_count;
+  uint16_t first_goal;
+  uint8_t goal_count;
+} rank_t;
 
 #endif

@@ -5,6 +5,7 @@
 #   make host       -> output/petsim-host (PC build, for tests and screenshots)
 #   make screens    -> PNG screenshots of every screen in output/screens/
 #   make test       -> unit tests on PC
+#   make balance    -> a bot plays the whole game: time per zone (output/balance.txt)
 #   make assets     -> regenerates src/generated/ from data/, assets/ and tools/ (needs Python 3 + Pillow)
 #   make wiki       -> downloads data/ and the images again from the PS99 wiki (needs network)
 
@@ -84,27 +85,47 @@ SCREENS_RICH = OK 4 D OK D OK D OK D OK D OK D OK D OK D OK D D W2 SHOT:11_zones
   6 R R R D SHOT:16_index \
   5 OK OK OK W60 SHOT:17_upgrades R R D OK OK W60 SHOT:18_upgrades_eggs \
   3 OK W14 SHOT:19_hatch3_shake W80 SHOT:20_hatch3_reveal BACK \
-  2 U R R R OK W2 SHOT:21_recycle OK W2 SHOT:22_recycled L L OK W2 SHOT:23_pets_filter
+  2 U R R R OK W2 SHOT:21_recycle OK W2 SHOT:22_recycled L L OK W2 SHOT:23_pets_filter \
+  7 W2 SHOT:24_quests 8 W2 SHOT:25_potions OK W2 SHOT:26_potion_used TOOLBOX R OK W2 SHOT:27_enchants \
+  4 U U OK 1 W2 R R R D OK W2 SHOT:28_golden_machine
+# A huge from the first egg (--huge)
+SCREENS_HUGE = OK 3 OK W20 SHOT:30_huge_shake W60 SHOT:31_huge_coming W60 SHOT:32_huge_reveal
 
 .PHONY: screens
 screens: $(BUILD_DIR)/petsim-host
 	@mkdir -p $(BUILD_DIR)/screens
 	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens "$(SCREENS_SCRIPT)"
 	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens --rich "$(SCREENS_RICH)"
+	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens --huge "$(SCREENS_HUGE)"
 	$(Q) python3 tools/ppm_to_png.py $(BUILD_DIR)/screens
 
 # --- Tests ---
+
+GAME_SRC = $(wildcard src/game/*.c) src/generated/content.c
 
 .PHONY: test
 test:
 	@mkdir -p $(BUILD_DIR)/tests
 	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_numfmt.c src/game/numfmt.c -o $(BUILD_DIR)/tests/test_numfmt
 	$(Q) $(BUILD_DIR)/tests/test_numfmt
-	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_eggs.c src/game/game.c src/generated/content.c -lm -o $(BUILD_DIR)/tests/test_eggs
+	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_eggs.c $(GAME_SRC) -lm -o $(BUILD_DIR)/tests/test_eggs
 	$(Q) $(BUILD_DIR)/tests/test_eggs
-	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_save.c src/save/save.c src/save/storage.c src/game/game.c \
-	  src/generated/content.c -lm -o $(BUILD_DIR)/tests/test_save
+	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_save.c src/save/save.c src/save/storage.c $(GAME_SRC) -lm -o $(BUILD_DIR)/tests/test_save
 	$(Q) $(BUILD_DIR)/tests/test_save
+
+# --- Balance simulator (a bot plays the whole game, see tests/balance_sim.c) ---
+
+.PHONY: balance calibrate
+balance: $(BUILD_DIR)/balance_sim
+	$(Q) $(BUILD_DIR)/balance_sim | tee $(BUILD_DIR)/balance.txt
+
+$(BUILD_DIR)/balance_sim: tests/balance_sim.c $(GAME_SRC) $(wildcard src/game/*.h src/generated/*.h)
+	@mkdir -p $(BUILD_DIR)
+	$(Q) $(HOST_CC) -std=c11 -O2 -Wall tests/balance_sim.c $(GAME_SRC) -lm -o $@
+
+# tunes the coins of each zone for a ~6 h game (data/balance.csv), then make balance
+calibrate:
+	python3 tools/calibrate_balance.py
 
 # --- Generated sources (committed, so building does not need Python) ---
 

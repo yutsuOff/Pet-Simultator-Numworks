@@ -1,0 +1,334 @@
+rank,index,stars,reward_wiki,quantity,kind,type,tier
+1,1,1,TNT,3,skip,,0
+1,2,1,Bag of Diamonds,50,diamonds,,0
+1,3,1,Bag of Diamonds,150,diamonds,,0
+1,4,1,Speed I,1,skip,,0
+1,5,1,Damage Potion I,1,potion,damage,1
+1,6,1,Strong Pets I,1,enchant,strong,1
+1,7,1,Bag of Diamonds,300,diamonds,,0
+1,8,2,Coins Potion I,2,potion,coins,1
+1,9,4,Damage Potion II,3,potion,damage,2
+2,1,1,Gift Bag,1,skip,,0
+2,2,1,Bag of Diamonds,400,diamonds,,0
+2,3,1,Lucky Eggs Potion I,3,potion,lucky,1
+2,4,1,Tap Power I,1,enchant,tap,1
+2,5,2,Damage Potion I,3,potion,damage,1
+2,6,2,Bag of Diamonds,500,diamonds,,0
+2,7,2,Magnet Flag,1,skip,,0
+2,8,2,Coins Potion I,3,potion,coins,1
+2,9,3,Treasure Hunter Potion II,1,potion,treasure,2
+2,10,3,Diamonds Potion I,1,potion,diamonds,1
+2,11,3,Toy Bone,3,skip,,0
+2,12,4,Hasty Flag,1,skip,,0
+3,1,1,Gift Bag,1,skip,,0
+3,2,1,Bag of Diamonds,400,diamonds,,0
+3,3,1,Speed Potion I,2,skip,,0
+3,4,2,Banana,10,skip,,0
+3,5,2,Damage Potion II,1,potion,damage,2
+3,6,2,Bag of Diamonds,500,diamonds,,0
+3,7,2,Coins Potion II,1,potion,coins,2
+3,8,2,Treasure Hunter Potion II,1,potion,treasure,2
+3,9,3,Diamonds Potion I,2,potion,diamonds,1
+3,10,3,Lucky Eggs Potion II,1,potion,lucky,2
+3,11,3,Magnet Flag,1,skip,,0
+3,12,3,Treasure Hunter Potion II,1,potion,treasure,2
+3,13,3,Magnet II,1,skip,,0
+3,14,4,Strong Pets II,1,enchant,strong,2
+4,1,1,Gift Bag,1,skip,,0
+4,2,1,Bag of Diamonds,750,diamonds,,0
+4,3,1,Apple,5,skip,,0
+4,4,1,Gift Bag,1,skip,,0
+4,5,2,Damage Potion II,1,potion,damage,2
+4,6,2,Bag of Diamonds,1,diamonds,,0
+4,7,2,Coins Potion II,1,potion,coins,2
+4,8,2,Treasure Hunter Potion II,1,potion,treasure,2
+4,9,2,Banana,5,skip,,0
+4,10,3,Crystal Key: Lower Half,1,skip,,0
+4,11,3,Basic Coin Jar,3,skip,,0
+4,12,3,Coins Potion II,2,potion,coins,2
+4,13,3,Pineapple,10,skip,,0
+4,14,3,Damage Potion II,2,potion,damage,2
+4,15,4,Crystal Key: Upper Half,1,skip,,0
+4,16,4,Comet,2,skip,,0
+4,17,4,Strong Pets III,1,enchant,strong,3
+4,18,5,Spinny Wheel Ticket,1,skip,,0
+5,1,1,Gift Bag,1,skip,,0
+5,2,1,Bag of Diamonds,1,diamonds,,0
+5,3,1,Apple,7,skip,,0
+5,4,1,Coins Potion II,2,potion,coins,2
+5,5,2,Bag of Diamonds,2,diamonds,,0
+5,6,2,Gift Bag,1,skip,,0
+5,7,2,Lucky Eggs Potion II,2,potion,lucky,2
+5,8,3,Orange,8,skip,,0
+5,9,3,Spinny Wheel Ticket,1,skip,,0
+5,10,3,Large Gift Bag,1,skip,,0
+5,11,3,Damage Potion II,2,potion,damage,2
+5,12,4,Banana,10,skip,,0
+5,13,4,Tap Power III,1,enchant,tap,3
+5,14,4,Coins Potion III,1,potion,coins,3
+5,15,4,Pineapple,10,skip,,0
+5,16,4,Apple,10,skip,,0
+5,17,5,Crystal Key,1,skip,,0
+5,18,5,Magnet Flag,2,skip,,0
+5,19,5,Large Gift Bag,1,skip,,0
+5,20,6,Happy Pets,1,skip,,0
+6,1,1,Gift Bag,1,skip,,0
+6,2,1,Bag of Diamonds,2,diamonds,,0
+6,3,1,Pineapple,8,skip,,0
+6,4,1,Magnet Flag,2,skip,,0
+6,5,2,Diamonds Potion III,1,potion,diamonds,3
+6,6,2,Bag of Diamonds,2,diamonds,,0
+6,7,2,Diamonds Flag,2,skip,,0
+6,8,3,Lucky Eggs Potion III,1,potion,lucky,3
+6,9,3,Comet,4,skip,,0
+6,10,3,Damage Potion III,2,potion,damage,3
+6,11,3,Crystal Key,1,skip,,0
+6,12,4,Large Gift Bag,2,skip,,0
+6,13,4,Orange,10,skip,,0
+6,14,4,Diamonds Flag,2,skip,,0
+6,15,4,Lucky Eggs Potion III,1,potion,lucky,3
+6,16,5,Apple,15,skip,,0
+6,17,5,Tap Power IV,1,enchant,tap,3
+6,18,5,Giant Coin Jar,2,skip,,0
+6,19,5,Damage Potion IV,1,potion,damage,3
+6,20,6,Magnet III,1,skip,,0
+6,21,6,Diamonds Potion III,1,potion,diamonds,3
+6,22,6,Hasty Flag,3,skip,,0
+6,23,6,Coins Potion III,4,potion,coins,3
+6,24,7,Booth Slot Voucher,1,skip,,0
+7,1,2,Gift Bag,1,skip,,0
+7,2,2,Bag of Diamonds,2,diamonds,,0
+7,3,2,Rainbow Fruit,3,skip,,0
+7,4,3,Comet,5,skip,,0
+7,5,3,Diamonds Potion III,1,potion,diamonds,3
+7,6,3,Bag of Diamonds,3,diamonds,,0
+7,7,3,TNT Crate,1,skip,,0
+7,8,3,Lucky Eggs Potion III,3,potion,lucky,3
+7,9,3,Gift Bag,3,skip,,0
+7,10,4,Damage Potion IV,3,potion,damage,3
+7,11,4,Giant Coin Jar,5,skip,,0
+7,12,4,Comet,8,skip,,0
+7,13,4,Banana,12,skip,,0
+7,14,4,Tap Power IV,1,enchant,tap,3
+7,15,5,Spinny Wheel Ticket,2,skip,,0
+7,16,5,TNT,8,skip,,0
+7,17,5,Toy Ball,5,skip,,0
+7,18,5,Squeaky Toy,5,skip,,0
+7,19,5,Apple,14,skip,,0
+7,20,6,Toy Bone,5,skip,,0
+7,21,6,Lucky Eggs III,1,enchant,lucky,3
+7,22,6,Giant Coin Jar,4,skip,,0
+7,23,6,Banana,20,skip,,0
+7,24,7,Bag of Diamonds,5,diamonds,,0
+7,25,7,Criticals IV,1,skip,,0
+7,26,7,Crystal Key,1,skip,,0
+7,27,8,Rainbow Fruit,8,skip,,0
+7,28,9,Strong Pets IV,2,enchant,strong,3
+8,1,2,Gift Bag,3,skip,,0
+8,2,2,Bag of Diamonds,3,diamonds,,0
+8,3,2,TNT Crate,3,skip,,0
+8,4,2,Comet,4,skip,,0
+8,5,3,Damage Potion III,5,potion,damage,3
+8,6,3,Bag of Diamonds,4,diamonds,,0
+8,7,3,Diamonds Potion III,2,potion,diamonds,3
+8,8,3,Magnet III,1,skip,,0
+8,9,4,Rainbow Fruit,4,skip,,0
+8,10,4,Criticals V,1,skip,,0
+8,11,4,Large Gift Bag,1,skip,,0
+8,12,5,Magic Coin Jar,5,skip,,0
+8,13,5,Banana,25,skip,,0
+8,14,5,Tap Power IV,1,enchant,tap,3
+8,15,5,Crystal Key,1,skip,,0
+8,16,6,TNT,16,skip,,0
+8,17,6,Treasure Hunter IV,1,enchant,treasure,3
+8,18,6,Rainbow Fruit,8,skip,,0
+8,19,6,Hasty Flag,5,skip,,0
+8,20,7,Damage Potion IV,2,potion,damage,3
+8,21,7,Fortune Flag,5,skip,,0
+8,22,7,Toy Ball,5,skip,,0
+8,23,7,Bag of Diamonds,5,diamonds,,0
+8,24,7,Coins Potion IV,2,potion,coins,3
+8,25,8,Criticals IV,2,skip,,0
+8,26,8,Comet,8,skip,,0
+8,27,8,Treasure Hunter Potion V,2,potion,treasure,3
+8,28,9,Damage Potion V,2,potion,damage,3
+8,29,9,Coins Potion V,2,potion,coins,3
+8,30,9,Large Gift Bag,2,skip,,0
+8,31,10,Giant Coin Jar,10,skip,,0
+8,32,10,Blast,1,skip,,0
+9,1,3,Gift Bag,3,skip,,0
+9,2,3,Bag of Diamonds,3,diamonds,,0
+9,3,3,Damage Potion IV,3,potion,damage,3
+9,4,3,Comet,4,skip,,0
+9,5,3,Basic Coin Jar,3,skip,,0
+9,6,4,Bag of Diamonds,4,diamonds,,0
+9,7,4,Rainbow Fruit,8,skip,,0
+9,8,4,Coins Potion IV,5,potion,coins,3
+9,9,4,Diamonds Potion III,4,potion,diamonds,3
+9,10,4,Lucky Eggs IV,1,enchant,lucky,3
+9,11,5,Large Gift Bag,1,skip,,0
+9,12,5,Seed Bag,1,skip,,0
+9,13,5,Apple,25,skip,,0
+9,14,5,Treasure Hunter IV,2,enchant,treasure,3
+9,15,5,Crystal Key,1,skip,,0
+9,16,6,Insta-Plant Capsule,1,skip,,0
+9,17,6,Treasure Hunter V,1,enchant,treasure,3
+9,18,6,Rainbow Fruit,12,skip,,0
+9,19,7,Diamonds Flag,5,skip,,0
+9,20,7,Damage Potion IV,3,potion,damage,3
+9,21,7,Fortune Flag,3,skip,,0
+9,22,8,Squeaky Toy,5,skip,,0
+9,23,8,Bag of Diamonds,6,diamonds,,0
+9,24,8,Coins Potion IV,3,potion,coins,3
+9,25,8,Criticals V,1,skip,,0
+9,26,8,Giant Coin Jar,5,skip,,0
+9,27,9,Comet,5,skip,,0
+9,28,9,Damage Potion V,3,potion,damage,3
+9,29,9,Coins Potion V,3,potion,coins,3
+9,30,9,Large Gift Bag,2,skip,,0
+9,31,9,Seed Bag,2,skip,,0
+9,32,10,Nametag,3,skip,,0
+9,33,10,Diamonds Potion III,3,potion,diamonds,3
+9,34,10,Damage Potion V,3,potion,damage,3
+9,35,11,Coins Potion V,3,potion,coins,3
+9,36,11,Large Gift Bag,3,skip,,0
+9,37,11,TNT Crate,10,skip,,0
+9,38,12,Diamonds V,1,enchant,diamonds,3
+10,1,4,Gift Bag,5,skip,,0
+10,2,4,Bag of Diamonds,5,diamonds,,0
+10,3,4,TNT Crate,5,skip,,0
+10,4,4,Comet,5,skip,,0
+10,5,4,Damage Potion III,6,potion,damage,3
+10,6,4,Bag of Diamonds,5,diamonds,,0
+10,7,5,Coin Potion IV,3,potion,coins,3
+10,8,5,Apple,35,skip,,0
+10,9,5,Magnet Flag,6,skip,,0
+10,10,5,Damage Potion IV,4,potion,damage,3
+10,11,5,Insta-Plant Capsule,3,skip,,0
+10,12,5,Fortune Flag,6,skip,,0
+10,13,6,Banana,35,skip,,0
+10,14,6,Damage Potion V,2,potion,damage,3
+10,15,6,Crystal Key,1,skip,,0
+10,16,6,TNT,20,skip,,0
+10,17,7,Diamonds Potion III,3,potion,diamonds,3
+10,18,7,Lucky Eggs Potion IV,2,potion,lucky,3
+10,19,7,Pineapple,35,skip,,0
+10,20,7,Squeaky Toy,10,skip,,0
+10,21,7,Insta-Plant Capsule,3,skip,,0
+10,22,8,Treasure Hunter Potion V,2,potion,treasure,3
+10,23,8,Damage Potion V,2,potion,damage,3
+10,24,8,Coins Potion V,2,potion,coins,3
+10,25,8,Large Gift Bag,2,skip,,0
+10,26,8,Bag of Diamonds,7,diamonds,,0
+10,27,9,Toy Ball,10,skip,,0
+10,28,9,Bag of Diamonds,8,diamonds,,0
+10,29,9,Coins Potion IV,2,potion,coins,3
+10,30,9,Spinny Wheel Ticket,5,skip,,0
+10,31,9,Seed Bag,2,skip,,0
+10,32,9,Crystal Key,2,skip,,0
+10,33,10,Toy Bone,8,skip,,0
+10,34,10,Damage Potion V,2,potion,damage,3
+10,35,10,Coins Potion V,2,potion,coins,3
+10,36,11,Large Gift Bag,3,skip,,0
+10,37,11,Insta-Plant Capsule,5,skip,,0
+10,38,11,Comet,10,skip,,0
+10,39,12,Coins Potion VI,1,potion,coins,3
+10,40,12,Treasure Hunter Potion VI,1,potion,treasure,3
+10,41,12,Rainbow Fruit,20,skip,,0
+10,42,13,Agility Charm,2,skip,,0
+11,1,3,Gift Bag,6,skip,,0
+11,2,3,Bag of Diamonds,6,diamonds,,0
+11,3,3,Damage Potion III,5,potion,damage,3
+11,4,3,Spinny Wheel Ticket,4,skip,,0
+11,5,3,Lucky Eggs Potion IV,3,potion,lucky,3
+11,6,3,Bag of Diamonds,6,diamonds,,0
+11,7,4,Insta-Plant Capsule,5,skip,,0
+11,8,4,Treasure Hunter Potion V,3,potion,treasure,3
+11,9,4,Damage Potion V,2,potion,damage,3
+11,10,4,Coins Potion V,5,potion,coins,3
+11,11,5,TNT Crate,12,skip,,0
+11,12,5,Diamonds Potion IV,2,potion,diamonds,3
+11,13,5,Lucky Eggs Potion V,3,potion,lucky,3
+11,14,5,Rainbow Fruit,15,skip,,0
+11,15,5,Toy Bone,25,skip,,0
+11,16,6,Insta-Plant Capsule,7,skip,,0
+11,17,6,Hasty Flag,12,skip,,0
+11,18,6,Banana,50,skip,,0
+11,19,6,Damage Potion V,3,potion,damage,3
+11,20,6,Crystal Key,2,skip,,0
+11,21,7,Coins Potion IV,10,potion,coins,3
+11,22,7,TNT Crate,12,skip,,0
+11,23,7,Fortune Flag,10,skip,,0
+11,24,7,Damage Potion IV,10,potion,damage,3
+11,25,7,Large Gift Bag,3,skip,,0
+11,26,8,Spinny Wheel Ticket,5,skip,,0
+11,27,8,Seed Bag,10,skip,,0
+11,28,8,Crystal Key,2,skip,,0
+11,29,8,Toy Bone,40,skip,,0
+11,30,9,Bag of Diamonds,8,diamonds,,0
+11,31,9,Tap Power V,1,enchant,tap,3
+11,32,9,Bag of Diamonds,9,diamonds,,0
+11,33,9,Coins Potion V,3,potion,coins,3
+11,34,10,Damage Potion VI,2,potion,damage,3
+11,35,10,Lucky Eggs Potion VI,2,potion,lucky,3
+11,36,10,Large Gift Bag,4,skip,,0
+11,37,10,Insta-Plant Capsule,12,skip,,0
+11,38,11,Seed Bag,6,skip,,0
+11,39,11,Giant Coin Jar,8,skip,,0
+11,40,11,Comet,7,skip,,0
+11,41,12,Bag of Diamonds,10,diamonds,,0
+11,42,12,Damage Potion VI,2,potion,damage,3
+11,43,12,Diamonds Potion V,1,potion,diamonds,3
+11,44,13,Coins Potion VI,2,potion,coins,3
+11,45,13,Bonus Charm,1,skip,,0
+11,46,14,Charm Stone,1,skip,,0
+12,1,3,Gift Bag,6,skip,,0
+12,2,3,Bag of Diamonds,8,diamonds,,0
+12,3,3,TNT Crate,12,skip,,0
+12,4,3,Comet,7,skip,,0
+12,5,4,Damage Potion V,3,potion,damage,3
+12,6,4,Bag of Diamonds,8,diamonds,,0
+12,7,4,Coins Potion V,2,potion,coins,3
+12,8,5,Orange,50,skip,,0
+12,9,5,Hasty Flag,12,skip,,0
+12,10,5,Damage Potion IV,5,potion,damage,3
+12,11,6,Nametag,3,skip,,0
+12,12,6,Diamonds Flag,10,skip,,0
+12,13,6,Strong Pets V,2,enchant,strong,3
+12,14,6,Damage Potion V,3,potion,damage,3
+12,15,6,Crystal Key,2,skip,,0
+12,16,6,TNT Crate,15,skip,,0
+12,17,7,Diamonds Potion IV,1,potion,diamonds,3
+12,18,7,Lucky Eggs Potion V,1,potion,lucky,3
+12,19,7,Apple,50,skip,,0
+12,20,7,Toy Ball,23,skip,,0
+12,21,7,Insta-Plant Capsule,10,skip,,0
+12,22,7,Treasure Hunter Potion V,3,potion,treasure,3
+12,23,8,Damage Potion V,3,potion,damage,3
+12,24,8,Coins Potion V,3,potion,coins,3
+12,25,8,Large Gift Bag,3,skip,,0
+12,26,8,Bag of Diamonds,9,diamonds,,0
+12,27,8,Squeaky Toy,25,skip,,0
+12,28,9,Magnet Flag,16,skip,,0
+12,29,9,Coins Potion V,4,potion,coins,3
+12,30,9,Spinny Wheel Ticket,5,skip,,0
+12,31,9,Seed Bag,5,skip,,0
+12,32,9,Crystal Key,3,skip,,0
+12,33,10,Giant Coin Jar,4,skip,,0
+12,34,10,Damage Potion V,2,potion,damage,3
+12,35,10,Coins Potion VI,2,potion,coins,3
+12,36,11,Large Gift Bag,3,skip,,0
+12,37,11,Seed Bag,6,skip,,0
+12,38,11,Bag of Diamonds,10,diamonds,,0
+12,39,11,Coins Potion VI,2,potion,coins,3
+12,40,12,Treasure Hunter Potion VI,1,potion,treasure,3
+12,41,12,Rainbow Fruit,30,skip,,0
+12,42,12,Spinny Wheel Ticket,5,skip,,0
+12,43,12,Damage Potion VI,2,potion,damage,3
+12,44,13,Coins Potion VII,1,potion,coins,3
+12,45,13,Charm Stone,1,skip,,0
+12,46,13,Lucky Eggs Potion VII,1,potion,lucky,3
+12,47,14,Diamonds Potion V,2,potion,diamonds,3
+12,48,14,Treasure Hunter Potion VI,2,potion,treasure,3
+12,49,14,Damage Potion VII,2,potion,damage,3
+12,50,15,Lucky Eggs VI,1,enchant,lucky,3

@@ -3,7 +3,7 @@
 Adaptation 2D de Pet Simulator, en application native C (EADK) pour calculatrice NumWorks (`.nwa`).
 Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION.md).
 
-## État : M2 — progression (améliorations, index, doublons)
+## État : M4 — variantes, Huges, objets, rangs et quêtes, rebirth (partie d'environ 6 h)
 
 - **Contenu réel de PS99** (wiki fandom) : 50 œufs, les 37 zones qui les contiennent, 140 pets,
   avec leurs vraies images. Détails et sources : [data/README.md](data/README.md).
@@ -17,10 +17,24 @@ Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION
 - **Améliorations** (diamants) : Pets (force, équipe), Farming (coup de poing, réapparition),
   Œufs (chance, ouverture multiple ×2/×3), Richesse (coins, diamants).
 - **Zones** : les 37 zones avec leur capture, déblocage dans l'ordre, téléportation.
-- **Index** : les 140 pets, découverts en couleur, les autres en silhouette. Compléter un œuf
+- **Variantes** : à chaque œuf, 2 % de Golden, 0,5 % de Rainbow, 1 sur 1 000 de Shiny
+  (couleurs et étincelles à l'écran). **Machine Golden** (zone 7) et **Machine Rainbow**
+  (zone 14) : 10 pets identiques (non équipés) → 1 de la variante suivante.
+- **Huges** (rareté Exclusive) : Huge Cat, Huge Dog et Huge Axolotl, 1 chance sur 50 000 dans
+  n'importe quel œuf, avec une animation spéciale.
+- **Objets** (onglet 8) : potions Coins, Dégâts, Diamants, Chance, Trésor et enchants Coins,
+  Diamants, Chance, Force, Coup, Trésor, niveaux I à III (valeurs PS99). Trouvés en cassant des
+  objets et dans les récompenses de rang. Potions actives visibles dans la barre du haut.
+- **Quêtes et rangs** (onglet 7) : les 12 premiers rangs de PS99 (Noob → Superstar), jusqu'à
+  4 quêtes (1 à 4 ★) ; les étoiles débloquent les récompenses du rang ; emplacements d'enchant
+  aux rangs 1, 3, 5, 8 et 11.
+- **Rebirth** (fin de la liste des zones, une fois la zone 37 atteinte) : coins et zones
+  remis à zéro, pets +75 % plus forts. 1 rebirth pour l'instant (il ouvrira les zones suivantes).
+- **Index** : les 143 pets, découverts en couleur, les autres en silhouette. Compléter un œuf
   (tous ses pets découverts, ★) donne des diamants ; tous les 20 pets découverts : +5 % de coins.
 - **Sauvegarde automatique** dans le fichier `petsim.py` (visible dans l'app Python) : voir plus bas.
-- Pas encore : quêtes et succès (M4).
+- **Durée** : réglée pour environ 6 h jusqu'à la zone 37 (`make balance`, voir plus bas) ;
+  les diamants sont rares.
 - Objets à casser, du moins au plus riche : pièce, tas de pièces, caisse, cadeau, coffre ;
   diamant, tas de diamants. Vraies images PS99 (`assets/art/`). Icônes des onglets : provisoires.
 
@@ -54,12 +68,14 @@ avec Home) dans un script **`petsim.py`**, visible dans l'app Python. L'écran t
 | Flèches | se déplacer |
 | OK / EXE | action |
 | ↓ sur la dernière ligne | aller sur la barre d'onglets (←/→ change d'onglet, ↑ revient) |
-| 1 à 7 | onglet direct (Farm, Pets, Œufs, Zones, Amélio., Index, Quêtes) |
+| 1 à 8 | onglet direct (Farm, Pets, Œufs, Zones, Amélio., Index, Quêtes, Objets) |
 | Retour | fermer l'animation d'œuf, sinon revenir à Farm |
 | Écran titre : Toolbox | diagnostic de la sauvegarde |
 | Pets : OK / Effacer / Toolbox | équiper un exemplaire / en retirer un / équiper les meilleurs |
 | Pets : ↑ depuis la 1re ligne | barre d'outils (←/→ choisir, OK appliquer) |
 | Amélio. : ←/→, ↑/↓, OK | catégorie, amélioration, acheter le niveau suivant |
+| Objets : OK / Toolbox | boire la potion ou (dés)équiper l'enchant / passer Potions ↔ Enchants |
+| Farm, zones 7 et 14 : OK sur la machine | ouvrir la machine Golden / Rainbow |
 | Œufs : OK (pendant l'animation) | passer l'animation, puis rouvrir le même œuf |
 | Œufs, Zones : ←/→ | défiler par page |
 | Home | quitter |
@@ -78,6 +94,8 @@ make screens    # captures PNG de tous les écrans -> output/screens/
 make test       # tests unitaires
 make assets     # régénère src/generated/ depuis data/ et assets/ (Python 3 + Pillow, facultatif)
 make wiki       # retélécharge data/ et les images depuis le wiki PS99 (réseau)
+make balance    # un bot joue toute la partie : temps par zone (output/balance.txt)
+make calibrate  # règle les gains de chaque zone pour une partie d'environ 6 h
 ```
 
 Les fichiers de `src/generated/` (police, images, tables du contenu) sont versionnés : Python n'est **pas** nécessaire

@@ -264,6 +264,39 @@ int gfx_text_shadow(const font_t *f, int x, int y, const char *s, color_t c, col
 
 /* --- Sprites --- */
 
+/* --- Effects (golden / rainbow pets): recolors the sprite from its luminance --- */
+
+static int effect;
+static int effect_phase;
+
+void gfx_set_effect(int e, int phase) {
+  effect = e;
+  effect_phase = phase;
+}
+
+static color_t hue_color(int hue) { /* 0..359, full saturation */
+  int seg = hue / 60, f = (hue % 60) * 255 / 60;
+  switch (seg) {
+    case 0: return RGB(255, f, 0);
+    case 1: return RGB(255 - f, 255, 0);
+    case 2: return RGB(0, 255, f);
+    case 3: return RGB(0, 255 - f, 255);
+    case 4: return RGB(f, 0, 255);
+    default: return RGB(255, 0, 255 - f);
+  }
+}
+
+static color_t apply_effect(color_t c, int px, int py) {
+  int lum = (((c >> 11) * 8) * 77 + (((c >> 5) & 63) * 4) * 150 + ((c & 31) * 8) * 29) >> 8; /* 0..255 */
+  if (effect == GFX_EFFECT_GOLDEN) {
+    if (lum < 150) return gfx_mix(RGB(90, 55, 0), RGB(240, 180, 30), lum * 255 / 150);
+    return gfx_mix(RGB(240, 180, 30), RGB(255, 250, 200), (lum - 150) * 255 / 105);
+  }
+  color_t h = hue_color(((px + py) * 8 + effect_phase) % 360);
+  if (lum < 128) return gfx_mix(gfx_mix(h, RGB(0, 0, 0), 170), h, lum * 2);
+  return gfx_mix(h, RGB(255, 255, 255), (lum - 128) * 160 / 127);
+}
+
 static void sprite_impl(const sprite_t *s, int x, int y, bool tint, color_t tc) {
   int y0 = y < band_y0 ? band_y0 : y;
   int y1 = y + s->height > band_y1 ? band_y1 : y + s->height;
@@ -277,6 +310,7 @@ static void sprite_impl(const sprite_t *s, int x, int y, bool tint, color_t tc) 
       int a = s->palette_alpha[idx];
       if (a == 0) continue;
       color_t c = tint ? tc : s->palette[idx];
+      if (effect && !tint) c = apply_effect(c, i, py - y);
       p[px] = a == 15 ? c : gfx_mix(p[px], c, a * 17);
     }
   }
@@ -311,6 +345,7 @@ static void sprite_half_impl(const sprite_t *s, int x, int y, bool tint, color_t
       }
       if (!asum) continue;
       color_t c = tint ? tc : (color_t)(((rs / asum) << 11) | ((gs / asum) << 5) | (bs / asum));
+      if (effect && !tint) c = apply_effect(c, i * 2, (py - y) * 2);
       int a = asum * 17 / 4; /* 0..255 */
       p[px] = a >= 255 ? c : gfx_mix(p[px], c, a);
     }
@@ -335,6 +370,7 @@ void gfx_sprite_scaled(const sprite_t *s, int x, int y, int scale) {
       int a = s->palette_alpha[idx];
       if (a == 0) continue;
       color_t c = s->palette[idx];
+      if (effect) c = apply_effect(c, i / scale, (py - y) / scale);
       p[px] = a == 15 ? c : gfx_mix(p[px], c, a * 17);
     }
   }

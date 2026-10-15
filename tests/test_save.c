@@ -68,17 +68,29 @@ static void test_format(void) {
   game.zone = 3;
   game.zones_unlocked = 5;
   game.eggs_opened = 77;
-  game.owned[0] = 3;
-  game.owned[17] = 300;
-  game.owned[PET_COUNT - 1] = 20000;
+  game.owned[0][VAR_NORMAL] = 3;
+  game.owned[17][VAR_NORMAL] = 300;
+  game.owned[17][VAR_SHINY + VAR_RAINBOW] = 2;
+  game.owned[PET_COUNT - 1][VAR_GOLDEN] = 20000; /* a huge */
   game.discovered[0] = 1;
   game.discovered[2] = 2;
-  game.team[0] = 17;
-  game.team[1] = 0;
+  game.team[0] = (team_slot_t){17, VAR_NORMAL};
+  game.team[1] = (team_slot_t){0, VAR_NORMAL};
   game.upgrade_level[UPG_TEAM] = 2;
-  game.team[6] = 17; /* slot 7 exists with 2 team upgrades */
+  game.team[6] = (team_slot_t){17, VAR_SHINY + VAR_RAINBOW}; /* slot 7 exists with 2 team upgrades */
   game.upgrade_level[UPG_LUCK] = 4;
   game.egg_rewarded[1] = 0x81;
+  game.potions_owned[4] = 7;
+  game.enchants_owned[10] = 2;
+  game.rank = 2; /* 2 enchant slots */
+  game.enchant_slot[1] = 10;
+  game.boost_tier[POTION_LUCKY] = 2;
+  game.boost_ms[POTION_LUCKY] = 123456;
+  game.next_reward = 3;
+  game.star_bank = 2;
+  game.quest_goal[1] = 40;
+  game.quest_progress[1] = 17;
+  game.rebirths = 1;
   game_t saved = game;
   char text[SAVE_TEXT_CAPACITY];
   int len = save_encode(text);
@@ -142,8 +154,11 @@ static void test_version1(void) {
   bool too_new;
   CHECK(save_decode(text, strlen(text), &too_new), "version 1 save not loaded");
   CHECK(game.coins == 5000 && game.diamonds == 12 && game.zone == 1 && game.zones_unlocked == 2, "v1 values");
-  CHECK(game.owned[2] == 3 && game.owned[3] == 1 && game_discovered(2) && !game_discovered(0), "v1 pets");
-  CHECK(game.team[0] == 2 && game.team[1] == 2 && game.team[2] == NO_PET, "v1 team");
+  CHECK(game.owned[2][VAR_NORMAL] == 3 && game.owned[3][VAR_NORMAL] == 1 && game_discovered(2) && !game_discovered(0),
+        "v1 pets");
+  CHECK(game.team[0].pet == 2 && game.team[1].pet == 2 && game.team[0].variant == VAR_NORMAL && game.team[2].pet == NO_PET,
+        "v1 team");
+  CHECK(game.rank == 0 && game.rebirths == 0 && game.enchant_slot[0] == NO_ITEM && game.quest_goal[0] == NO_QUEST, "v1 defaults");
   CHECK(game.upgrade_level[UPG_DAMAGE] == 0, "v1 upgrades");
 }
 

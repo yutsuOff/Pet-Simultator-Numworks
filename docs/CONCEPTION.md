@@ -393,8 +393,8 @@ fichier `petsim.nwa` (ou `make run` avec nwlink).
 | **M1** | Boucle jouable : farm, œufs + animation, inventaire, équiper, zones, index *(fait, avec le contenu PS99)* ; sauvegarde + écran de test sauvegarde *(à faire)* | **Premier jeu jouable sur calculatrice** |
 | **M2** | Améliorations, récompenses d'index, tri/filtres, recyclage des doublons *(fait, §10.1)* | Progression complète |
 | **M3** | Contenu complet : 50 œufs, 37 zones, 140 pets du wiki PS99 *(fait)* ; pièce, diamant et objets à casser *(fait)* ; icônes des onglets *(à faire)* | Contenu complet |
-| **M4** | Quêtes, succès, mécaniques choisies (§5) | Rejouabilité |
-| **M5** | Simulateur d'équilibrage, réglages, polish visuel, optimisation | Version 1.0 |
+| **M4** | Variantes Golden/Rainbow/Shiny, machines, Huges, potions et enchants, rangs et quêtes, rebirth *(fait, §10.2)* | Rejouabilité |
+| **M5** | Simulateur d'équilibrage *(fait : `make balance`, `make calibrate`)*, polish visuel, optimisation | Version 1.0 |
 
 Chaque étape sera compilée ; je te dirai exactement ce qui a été testé sur PC et ce qui reste à
 tester sur ta calculatrice.
@@ -420,6 +420,24 @@ tester sur ta calculatrice.
 - **Sauvegarde** : format 2 (améliorations, récompenses d'index, équipe jusqu'à 8) ; les
   sauvegardes du format 1 se chargent toujours (testé).
 
+### 10.2 M4 : ce qui a été fait
+
+- **Variantes** à l'éclosion : Golden 2 %, Rainbow 0,5 %, Shiny 1/1 000 (choix validé ; le wiki
+  ne donne que le gamepass Magic Eggs). Rendu par recoloration à l'affichage (doré, arc-en-ciel
+  animé) + étincelles pour les Shiny : aucune image en plus.
+- **Machines** (PS99) : Golden en zone 7, Rainbow en zone 14 (dernier emplacement de la Farm) ;
+  10 identiques non équipés → 1 ; les Huges n'y vont pas.
+- **Huges** : 3 (Cat, Dog, Axolotl), Exclusive, 1/50 000 par œuf, animation dédiée.
+- **Objets** : potions (5 types) et enchants (6 types), niveaux I-III, valeurs du wiki ; trouvés
+  sur les objets cassés (coffres et cadeaux plus souvent) et en récompense de rang.
+- **Rangs et quêtes** : rangs 1 à 12 du wiki (étoiles et récompenses), 4 quêtes simultanées.
+- **Rebirth** : à la zone 37, +75 % de force (Rebirth 1 de PS99), 1 maximum pour l'instant.
+- **Durée** : `make calibrate` règle les coins de chaque zone pour qu'un bot finisse en ~6 h
+  (5 h 54 mesurées) ; diamants : 2 % des objets, améliorations ×3 plus chères (toutes achetées
+  vers 5 h 30 par le bot).
+- **Sauvegarde** format 3 (variantes, objets, rangs, quêtes, rebirth), anciens formats relus ;
+  l'enregistrement grandit par pas de 512 octets si besoin (seulement s'il est le dernier).
+
 ## 11. Questions ouvertes (récapitulatif)
 
 1. ~~Modèle~~ : N0120, Epsilon 26.4.0.
@@ -429,10 +447,11 @@ tester sur ta calculatrice.
 4. **Farming** : semi-idle (on choisit une cible, les pets attaquent seuls, mode AUTO) **ou** aussi
    une part active (OK = coup de pouce « tap ») ?
 5. **Pets sur les cibles** : tous les pets sur un même objet, ou répartis sur plusieurs objets ?
-6. **Durée** visée pour finir les 50 zones ?
-7. **Mécaniques** du §5 à retenir (et lesquelles pour la première version) ?
+6. ~~Durée~~ : environ 6 h pour les 37 zones.
+7. ~~Mécaniques~~ : Golden/Rainbow (machines zones 7 et 14), Shiny, Huges, Rebirth, potions,
+   enchants, rangs/quêtes ; secrets plus tard.
 8. ~~Inventaire~~ : pets empilés (×N), sans limite ; recycler les doublons rend des coins (M2).
-9. **Diamonds** : sources validées (objets rares, coffres, quêtes, succès, index) ?
+9. ~~Diamonds~~ : rares (2 % des objets, index, récompenses de rang).
 10. ~~Sauvegarde~~ : faite (§8.2), à confirmer sur ta N0120.
 11. **Langue** de l'interface : français avec noms de pets en anglais (comme PS99) ?
 12. ~~Ouverture multiple~~ : débloquée par amélioration (×2, ×3).

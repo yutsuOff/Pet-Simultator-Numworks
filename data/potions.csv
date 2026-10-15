@@ -1,0 +1,16 @@
+type,tier,effect_percent,minutes,wiki_name,image
+coins,1,20,10,Coins,items/potion_coins_1.png
+coins,2,40,20,Coins,items/potion_coins_2.png
+coins,3,60,30,Coins,items/potion_coins_3.png
+damage,1,15,10,Damage,items/potion_damage_1.png
+damage,2,30,20,Damage,items/potion_damage_2.png
+damage,3,45,30,Damage,items/potion_damage_3.png
+diamonds,1,10,10,Diamonds,items/potion_diamonds_1.png
+diamonds,2,25,20,Diamonds,items/potion_diamonds_2.png
+diamonds,3,40,30,Diamonds,items/potion_diamonds_3.png
+lucky,1,25,10,Lucky Eggs,items/potion_lucky_1.png
+lucky,2,50,20,Lucky Eggs,items/potion_lucky_2.png
+lucky,3,75,30,Lucky Eggs,items/potion_lucky_3.png
+treasure,1,10,10,Treasure Hunter,items/potion_treasure_1.png
+treasure,2,20,20,Treasure Hunter,items/potion_treasure_2.png
+treasure,3,30,30,Treasure Hunter,items/potion_treasure_3.png

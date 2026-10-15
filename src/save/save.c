@@ -5,20 +5,26 @@
 
 #define SAVE_PERIOD_MS 5000
 #define HEADER_TEXT "# Pet Sim : sauvegarde (ne pas modifier)\n#"
-#define MAX_BINARY 700
-/* worst case: every pet count on 3 varint bytes */
-_Static_assert(3 + 8 + 8 + 1 + 1 + 4 + 1 + MAX_TEAM + 1 + 3 * PET_COUNT + (PET_COUNT + 7) / 8 + 1 + UPG_COUNT +
-               1 + (EGG_COUNT + 7) / 8 + 4 <= MAX_BINARY, "save too big");
+#define MAX_BINARY 3000
+/* worst case: every count on 3 varint bytes */
+_Static_assert(40 + 2 * MAX_TEAM + 3 * PET_COUNT * VARIANT_COUNT + (PET_COUNT + 7) / 8 + UPG_COUNT + EGG_COUNT / 8 +
+               3 * (POTION_COUNT + ENCHANT_COUNT) + MAX_ENCHANT_SLOTS + 5 * POTION_TYPE_COUNT + 6 * QUEST_SLOTS + 16 <=
+               MAX_BINARY, "save too big");
 _Static_assert(sizeof(HEADER_TEXT) + (MAX_BINARY + 2) / 3 * 4 + 2 <= SAVE_TEXT_CAPACITY, "save text too big");
 
 /* --- Binary format ---
  * 'P' 'S' version | coins f64 | diamonds f64 | zone u8 | zones_unlocked u8 | eggs_opened u32 |
- * v1: team[5] u8              v2: team_count u8 | team[team_count] u8
- * pet_count u8 | owned[pet_count] varint | discovered bitmap (pet_count bits) |
- * v2: upgrade_count u8 | levels[upgrade_count] u8 | egg_count u8 | egg_rewarded bitmap |
+ * v1: team[5] (pets)     v2: team_count | team pets     v3: team_count | team (pet, variant)
+ * pet_count u8 | v3: variant_count u8 |
+ * owned: v1-2 varint per pet (normal); v3 per pet and variant, run-length: 0, run | n |
+ * discovered bitmap (pet_count bits) |
+ * v2+: upgrade_count | levels | egg_count | egg_rewarded bitmap |
+ * v3: potion_count | potions varint | enchant_count | enchants varint | slot_count | slots |
+ *     boost_count | (tier u8, ms u32) | rank | next_reward | star_bank u16 |
+ *     quest_count | (goal u16, progress u32) | rebirths |
  * CRC32 of all the previous bytes.
- * Pets, eggs and upgrades are identified by their index: new content is only added at
- * the end, and counts are stored so an older save still loads. */
+ * Pets, eggs, upgrades and items are identified by their index: new content is only
+ * added at the end, and counts are stored so an older save still loads. */
 
 static uint32_t crc32(const uint8_t *p, size_t n) {
   uint32_t c = 0xFFFFFFFFu;
@@ -34,6 +40,14 @@ static uint8_t *put(uint8_t *p, const void *v, size_t n) {
   return p + n;
 }
 
+static uint8_t *put_varint(uint8_t *p, uint32_t v) {
+  do {
+    *p++ = (uint8_t)((v & 0x7F) | (v > 0x7F ? 0x80 : 0));
+    v >>= 7;
+  } while (v);
+  return p;
+}
+
 static int encode_binary(uint8_t *out) {
   uint8_t *p = out;
   *p++ = 'P';
@@ -45,20 +59,39 @@ static int encode_binary(uint8_t *out) {
   *p++ = game.zones_unlocked;
   p = put(p, &game.eggs_opened, 4);
   *p++ = MAX_TEAM;
-  p = put(p, game.team, MAX_TEAM);
+  for (int i = 0; i < MAX_TEAM; i++) *p++ = game.team[i].pet, *p++ = game.team[i].variant;
   *p++ = PET_COUNT;
-  for (int i = 0; i < PET_COUNT; i++) {
-    unsigned v = game.owned[i];
-    do {
-      *p++ = (uint8_t)((v & 0x7F) | (v > 0x7F ? 0x80 : 0));
-      v >>= 7;
-    } while (v);
+  *p++ = VARIANT_COUNT;
+  const uint16_t *counts = &game.owned[0][0];
+  for (int i = 0; i < PET_COUNT * VARIANT_COUNT;) {
+    if (counts[i]) {
+      p = put_varint(p, counts[i++]);
+      continue;
+    }
+    int run = 0;
+    while (i < PET_COUNT * VARIANT_COUNT && !counts[i]) run++, i++;
+    *p++ = 0;
+    p = put_varint(p, (uint32_t)run);
   }
   p = put(p, game.discovered, (PET_COUNT + 7) / 8);
   *p++ = UPG_COUNT;
   p = put(p, game.upgrade_level, UPG_COUNT);
   *p++ = EGG_COUNT;
   p = put(p, game.egg_rewarded, (EGG_COUNT + 7) / 8);
+  *p++ = POTION_COUNT;
+  for (int i = 0; i < POTION_COUNT; i++) p = put_varint(p, game.potions_owned[i]);
+  *p++ = ENCHANT_COUNT;
+  for (int i = 0; i < ENCHANT_COUNT; i++) p = put_varint(p, game.enchants_owned[i]);
+  *p++ = MAX_ENCHANT_SLOTS;
+  p = put(p, game.enchant_slot, MAX_ENCHANT_SLOTS);
+  *p++ = POTION_TYPE_COUNT;
+  for (int i = 0; i < POTION_TYPE_COUNT; i++) *p++ = game.boost_tier[i], p = put(p, &game.boost_ms[i], 4);
+  *p++ = game.rank;
+  *p++ = game.next_reward;
+  p = put(p, &game.star_bank, 2);
+  *p++ = QUEST_SLOTS;
+  for (int i = 0; i < QUEST_SLOTS; i++) p = put(p, &game.quest_goal[i], 2), p = put(p, &game.quest_progress[i], 4);
+  *p++ = game.rebirths;
   uint32_t c = crc32(out, (size_t)(p - out));
   p = put(p, &c, 4);
   return (int)(p - out);
@@ -72,6 +105,40 @@ static const uint8_t *get_bits(const uint8_t *p, int count, uint8_t *dest, int k
   return p + (count + 7) / 8;
 }
 
+/* Reader with bounds checks: any overflow makes the whole save invalid. */
+typedef struct {
+  const uint8_t *p, *end;
+  bool bad;
+} reader_t;
+
+static uint32_t rd_u8(reader_t *r) {
+  if (r->p >= r->end) return r->bad = true, 0;
+  return *r->p++;
+}
+
+static void rd(reader_t *r, void *dest, size_t n) {
+  if ((size_t)(r->end - r->p) < n) {
+    r->bad = true;
+    memset(dest, 0, n);
+    return;
+  }
+  memcpy(dest, r->p, n);
+  r->p += n;
+}
+
+static uint32_t rd_varint(reader_t *r) {
+  uint32_t v = 0;
+  for (int shift = 0; shift <= 28; shift += 7) {
+    uint32_t b = rd_u8(r);
+    v |= (b & 0x7F) << shift;
+    if (!(b & 0x80)) return v;
+  }
+  r->bad = true;
+  return 0;
+}
+
+static uint16_t clamp16(uint32_t v) { return (uint16_t)(v > UINT16_MAX ? UINT16_MAX : v); }
+
 static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
   *too_new = false;
   if (n < 3 + 4 || in[0] != 'P' || in[1] != 'S') return false;
@@ -83,56 +150,113 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
     *too_new = true;
     return false;
   }
-  game_t g = {0};
-  for (int i = 0; i < MAX_TEAM; i++) g.team[i] = NO_PET;
-  const uint8_t *p = in + 3, *end = in + n - 4;
-#define NEED(k) do { if (end - p < (long)(k)) return false; } while (0)
-  NEED(8 + 8 + 1 + 1 + 4 + 1);
-  memcpy(&g.coins, p, 8), p += 8;
-  memcpy(&g.diamonds, p, 8), p += 8;
-  g.zone = *p++;
-  g.zones_unlocked = *p++;
-  memcpy(&g.eggs_opened, p, 4), p += 4;
-  int team = version == 1 ? 5 : *p++;
-  NEED(team + 1);
-  for (int i = 0; i < team; i++, p++) {
-    if (i < MAX_TEAM) g.team[i] = *p;
+  static game_t g; /* large: not on the stack */
+  g = (game_t){0};
+  for (int i = 0; i < MAX_TEAM; i++) g.team[i].pet = NO_PET;
+  for (int i = 0; i < MAX_ENCHANT_SLOTS; i++) g.enchant_slot[i] = NO_ITEM;
+  for (int i = 0; i < QUEST_SLOTS; i++) g.quest_goal[i] = NO_QUEST;
+  reader_t r = {in + 3, in + n - 4, false};
+  rd(&r, &g.coins, 8);
+  rd(&r, &g.diamonds, 8);
+  g.zone = (uint8_t)rd_u8(&r);
+  g.zones_unlocked = (uint8_t)rd_u8(&r);
+  rd(&r, &g.eggs_opened, 4);
+  int team = version == 1 ? 5 : (int)rd_u8(&r);
+  for (int i = 0; i < team; i++) {
+    uint8_t pet = (uint8_t)rd_u8(&r), variant = version >= 3 ? (uint8_t)rd_u8(&r) : 0;
+    if (i < MAX_TEAM) g.team[i] = (team_slot_t){pet, variant};
   }
-  int count = *p++;
-  for (int i = 0; i < count; i++) {
-    unsigned v = 0;
-    for (int shift = 0;; shift += 7) {
-      if (p >= end || shift > 14) return false;
-      v |= (unsigned)(*p & 0x7F) << shift;
-      if (!(*p++ & 0x80)) break;
+  int pet_count = (int)rd_u8(&r);
+  if (version < 3) {
+    for (int i = 0; i < pet_count; i++) {
+      uint32_t v = rd_varint(&r);
+      if (i < PET_COUNT) g.owned[i][VAR_NORMAL] = clamp16(v);
     }
-    if (i < PET_COUNT) g.owned[i] = (uint16_t)(v > UINT16_MAX ? UINT16_MAX : v);
+  } else {
+    int variants = (int)rd_u8(&r);
+    for (int i = 0; i < pet_count * variants && !r.bad;) {
+      uint32_t v = rd_varint(&r);
+      if (v) {
+        if (i / variants < PET_COUNT && i % variants < VARIANT_COUNT) g.owned[i / variants][i % variants] = clamp16(v);
+        i++;
+      } else {
+        uint32_t run = rd_varint(&r);
+        if (!run || run > (uint32_t)(pet_count * variants - i)) r.bad = true;
+        i += (int)run;
+      }
+    }
   }
-  NEED((count + 7) / 8);
-  p = get_bits(p, count, g.discovered, PET_COUNT);
+  if (r.end - r.p < (pet_count + 7) / 8) return false;
+  r.p = get_bits(r.p, pet_count, g.discovered, PET_COUNT);
   if (version >= 2) {
-    NEED(1);
-    int upgrades_saved = *p++;
-    NEED(upgrades_saved + 1);
-    for (int i = 0; i < upgrades_saved; i++, p++) {
-      if (i < UPG_COUNT) g.upgrade_level[i] = *p <= upgrades[i].max_level ? *p : upgrades[i].max_level;
+    int k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint32_t lv = rd_u8(&r);
+      if (i < UPG_COUNT) g.upgrade_level[i] = (uint8_t)(lv <= upgrades[i].max_level ? lv : upgrades[i].max_level);
     }
-    int eggs_saved = *p++;
-    NEED((eggs_saved + 7) / 8);
-    p = get_bits(p, eggs_saved, g.egg_rewarded, EGG_COUNT);
+    int eggs_saved = (int)rd_u8(&r);
+    if (r.end - r.p < (eggs_saved + 7) / 8) return false;
+    r.p = get_bits(r.p, eggs_saved, g.egg_rewarded, EGG_COUNT);
   }
-  if (p != end) return false;
-#undef NEED
+  if (version >= 3) {
+    int k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint32_t v = rd_varint(&r);
+      if (i < POTION_COUNT) g.potions_owned[i] = clamp16(v);
+    }
+    k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint32_t v = rd_varint(&r);
+      if (i < ENCHANT_COUNT) g.enchants_owned[i] = clamp16(v);
+    }
+    k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint32_t e = rd_u8(&r);
+      if (i < MAX_ENCHANT_SLOTS) g.enchant_slot[i] = (uint8_t)(e < ENCHANT_COUNT ? e : NO_ITEM);
+    }
+    k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint32_t tier = rd_u8(&r), ms;
+      rd(&r, &ms, 4);
+      if (i < POTION_TYPE_COUNT && tier <= 3) g.boost_tier[i] = (uint8_t)tier, g.boost_ms[i] = tier ? ms : 0;
+    }
+    g.rank = (uint8_t)rd_u8(&r);
+    g.next_reward = (uint8_t)rd_u8(&r);
+    rd(&r, &g.star_bank, 2);
+    k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint16_t goal;
+      uint32_t progress;
+      rd(&r, &goal, 2);
+      rd(&r, &progress, 4);
+      if (i < QUEST_SLOTS) g.quest_goal[i] = goal < RANK_GOAL_COUNT ? goal : NO_QUEST, g.quest_progress[i] = progress;
+    }
+    g.rebirths = (uint8_t)rd_u8(&r);
+  }
+  if (r.bad || r.p != r.end) return false;
   /* sanity checks: a save from another content version must not crash the game */
   if (!(g.coins >= 0) || !(g.diamonds >= 0)) return false;
   if (g.zones_unlocked < 1 || g.zones_unlocked > ZONE_COUNT || g.zone >= g.zones_unlocked) return false;
+  if (g.rank >= RANK_COUNT) g.rank = RANK_COUNT - 1, g.next_reward = 0;
+  if (g.next_reward > ranks[g.rank].reward_count) g.next_reward = ranks[g.rank].reward_count;
+  if (g.rebirths > MAX_REBIRTH) g.rebirths = MAX_REBIRTH;
   game = g;
-  uint8_t saved_team[MAX_TEAM];
-  memcpy(saved_team, game.team, MAX_TEAM);
-  for (int i = 0; i < MAX_TEAM; i++) game.team[i] = NO_PET;
+  team_slot_t saved_team[MAX_TEAM];
+  memcpy(saved_team, game.team, sizeof(saved_team));
+  for (int i = 0; i < MAX_TEAM; i++) game.team[i].pet = NO_PET;
   for (int i = 0; i < game_team_slots(); i++) {
-    uint8_t pet = saved_team[i];
-    if (pet < PET_COUNT && game_equipped_count(pet) < game.owned[pet]) game.team[i] = pet;
+    team_slot_t t = saved_team[i];
+    if (t.pet < PET_COUNT && t.variant < VARIANT_COUNT && game_equipped_count(t.pet, t.variant) < game.owned[t.pet][t.variant]) {
+      game.team[i] = t;
+    }
+  }
+  uint8_t slots[MAX_ENCHANT_SLOTS];
+  memcpy(slots, game.enchant_slot, sizeof(slots));
+  for (int i = 0; i < MAX_ENCHANT_SLOTS; i++) game.enchant_slot[i] = NO_ITEM;
+  for (int i = 0; i < game_enchant_slots(); i++) {
+    if (slots[i] != NO_ITEM && game_enchant_equipped(slots[i]) < game.enchants_owned[slots[i]]) {
+      game.enchant_slot[i] = slots[i];
+    }
   }
   return true;
 }
@@ -197,7 +321,7 @@ static uint32_t last_crc, last_tick;
 static bool written_once;
 
 /* Record value of a Python script: status byte (0: no auto-import in the shell),
- * text, NUL, zero padding up to the fixed capacity. */
+ * text, NUL, zero padding up to the size of the record. */
 static uint8_t record[1 + SAVE_TEXT_CAPACITY];
 
 save_status_t save_init(void) {
@@ -221,7 +345,15 @@ storage_result_t save_now(void) {
   int len = save_encode((char *)record + 1);
   uint32_t c = crc32(record, (size_t)len + 1);
   if (written_once && c == last_crc) return last_result;
-  last_result = storage_write(&storage, SAVE_NAME, record, sizeof(record));
+  /* keep the size of the existing record if the text fits (rewritten in place) */
+  size_t needed = (size_t)len + 2, size = SAVE_MIN_RECORD + 1, existing;
+  if (storage_find(&storage, SAVE_NAME, &existing)) size = existing;
+  if (size < needed) size = (needed + 511) / 512 * 512;
+  if (size > sizeof(record)) {
+    last_result = STORAGE_FULL;
+    return last_result;
+  }
+  last_result = storage_write(&storage, SAVE_NAME, record, size);
   if (last_result == STORAGE_OK) {
     last_crc = c;
     written_once = true;

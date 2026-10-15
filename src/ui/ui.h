@@ -30,6 +30,18 @@ const char *ui_tier_name(int tier);
 /* Coin icon followed by the amount (1.23K...). Returns the width. */
 int ui_coin_amount(int x, int y, const font_t *f, double value, color_t c);
 
+/* Pet drawn with its variant (golden / rainbow colors, shiny sparkles). t: time (ms). */
+enum { PET_HALF, PET_FULL, PET_X2, PET_X3 };
+void ui_pet(int pet, int variant, int x, int y, int size, uint32_t t);
+void ui_sparkles(int x, int y, int w, int h, uint32_t t);
+/* "Shiny Golden Cat" (buf: at least 40 bytes). */
+char *ui_pet_name(int pet, int variant, char *buf);
+
+/* Items: potions 0.., enchants ITEM_ENCHANT.. ("Potion Coins II"). */
+#define ITEM_ENCHANT 100
+char *ui_item_name(int item, char *buf);
+const sprite_t *ui_item_sprite(int item);
+
 /* Short message over the bottom of the content, disappears after a moment.
  * text must stay valid (string literal or static buffer). */
 void ui_message(const char *text, uint32_t now);

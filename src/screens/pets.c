@@ -25,31 +25,48 @@ enum { BTN_SORT, BTN_FILTER, BTN_BEST, BTN_RECYCLE, BTN_COUNT };
 static const char *const sort_names[SORT_COUNT] = {"Tri Puissance", "Tri Rareté", "Tri Nom", "Tri Nombre"};
 static const char *const filter_names[FILTER_COUNT] = {"Tous", "Équipés", "Doublons"};
 
-static uint8_t list[PET_COUNT];
+/* entries: pet | variant << 8 */
+#define ENTRY(p, v) ((uint16_t)((p) | (v) << 8))
+#define PET(e) ((e) & 0xFF)
+#define VAR(e) ((e) >> 8)
+static uint16_t list[PET_COUNT * VARIANT_COUNT];
 static int count, selected, scroll;
 static int sort_mode, filter_mode;
 static bool on_bar;   /* the toolbar has the focus */
 static int bar_sel;
 static bool confirm;  /* "recycle the duplicates?" */
 static char message[64];
+static uint32_t clock_ms;
 
-static bool before(int a, int b) { /* true if pet a is listed before pet b */
+/* Rainbow and shiny pets on screen are animated. */
+static bool animated(void) {
+  for (int i = scroll * COLS; i < count && i < (scroll + ROWS) * COLS; i++) {
+    int v = VAR(list[i]);
+    if (variant_shiny(v) || variant_level(v) == VAR_RAINBOW) return true;
+  }
+  return false;
+}
+
+static bool before(uint16_t ea, uint16_t eb) { /* true if entry a is listed before entry b */
+  int a = PET(ea), b = PET(eb);
   switch (sort_mode) {
     case SORT_TIER:
       if (pets[a].tier != pets[b].tier) return pets[a].tier > pets[b].tier;
       break;
-    case SORT_NAME: return strcmp(pets[a].name, pets[b].name) < 0;
+    case SORT_NAME:
+      if (a != b) return strcmp(pets[a].name, pets[b].name) < 0;
+      break;
     case SORT_COUNT_OWNED:
-      if (game.owned[a] != game.owned[b]) return game.owned[a] > game.owned[b];
+      if (game.owned[a][VAR(ea)] != game.owned[b][VAR(eb)]) return game.owned[a][VAR(ea)] > game.owned[b][VAR(eb)];
       break;
   }
-  return pets[a].power > pets[b].power;
+  return game_pet_power(a, VAR(ea)) > game_pet_power(b, VAR(eb));
 }
 
-static bool shown(int p) {
-  if (!game.owned[p]) return false;
-  if (filter_mode == FILTER_EQUIPPED) return game_equipped_count(p) > 0;
-  if (filter_mode == FILTER_DUPLICATES) return game_duplicates(p) > 0;
+static bool shown(int p, int v) {
+  if (!game.owned[p][v]) return false;
+  if (filter_mode == FILTER_EQUIPPED) return game_equipped_count(p, v) > 0;
+  if (filter_mode == FILTER_DUPLICATES) return game_duplicates(p, v) > 0;
   return true;
 }
 
@@ -57,10 +74,12 @@ static void build_list(void) {
   int keep = count ? list[selected] : -1;
   count = 0;
   for (int p = 0; p < PET_COUNT; p++) {
-    if (shown(p)) list[count++] = (uint8_t)p;
+    for (int v = 0; v < VARIANT_COUNT; v++) {
+      if (shown(p, v)) list[count++] = ENTRY(p, v);
+    }
   }
   for (int i = 1; i < count; i++) { /* insertion sort, small list */
-    uint8_t v = list[i];
+    uint16_t v = list[i];
     int j = i - 1;
     while (j >= 0 && before(v, list[j])) list[j + 1] = list[j], j--;
     list[j + 1] = v;
@@ -93,8 +112,11 @@ static int duplicates_total(double *coins) {
   int n = 0;
   *coins = 0;
   for (int p = 0; p < PET_COUNT; p++) {
-    n += game_duplicates(p);
-    *coins += game_duplicates(p) * game_recycle_value(p);
+    if (pets[p].huge) continue;
+    for (int v = 0; v < VARIANT_COUNT; v++) {
+      n += game_duplicates(p, v);
+      *coins += game_duplicates(p, v) * game_recycle_value(p, v);
+    }
   }
   return n;
 }
@@ -118,7 +140,8 @@ static int press_button(int b, uint32_t now) {
 }
 
 static int update(const input_t *in, uint32_t now) {
-  int r = 0;
+  int r = (now / 120 != clock_ms / 120 && animated()) ? SCREEN_REDRAW_CONTENT : 0;
+  clock_ms = now;
   if (confirm) {
     if (input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE)) {
       int n;
@@ -159,13 +182,13 @@ static int update(const input_t *in, uint32_t now) {
   if (input_pressed(in, KEY_RIGHT) && selected < count - 1) selected++, r |= SCREEN_REDRAW_CONTENT;
   if (input_pressed(in, KEY_TOOLBOX)) r |= press_button(BTN_BEST, now);
   if (count && (input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE))) {
-    int p = list[selected];
-    if (game_equip(p)) r |= SCREEN_REDRAW_CONTENT;
+    int p = PET(list[selected]), v = VAR(list[selected]);
+    if (game_equip(p, v)) r |= SCREEN_REDRAW_CONTENT;
     else if (game_team_size() >= game_team_slots()) ui_message("Équipe complète (Effacer : retirer)", now), r |= SCREEN_REDRAW_CONTENT;
     else ui_message("Tous les exemplaires sont équipés", now), r |= SCREEN_REDRAW_CONTENT;
     if (filter_mode != FILTER_ALL) build_list();
   }
-  if (count && input_pressed(in, KEY_BACKSPACE) && game_unequip(list[selected])) {
+  if (count && input_pressed(in, KEY_BACKSPACE) && game_unequip(PET(list[selected]), VAR(list[selected]))) {
     r |= SCREEN_REDRAW_CONTENT;
     if (filter_mode != FILTER_ALL) build_list();
   }
@@ -195,19 +218,20 @@ static void draw_toolbar(void) {
 }
 
 static void draw_cell(int i, int x, int y) {
-  const pet_t *p = &pets[list[i]];
+  int pi = PET(list[i]), v = VAR(list[i]);
+  const pet_t *p = &pets[pi];
   bool sel = i == selected && !on_bar;
   color_t tc = ui_tier_color(p->tier);
   ui_card(x, y, CELL_W - 4, CELL_H - 4, sel, gfx_mix(COL_WHITE, tc, 50), gfx_mix(COL_WHITE, tc, 120));
   if (sel) y -= 2;
-  gfx_sprite_half(p->sprite, x + 4, y + 3);
-  int n = game.owned[list[i]];
+  ui_pet(pi, v, x + 4, y + 3, PET_HALF, clock_ms);
+  int n = game.owned[pi][v];
   if (n > 1) {
     char buf[12] = "x";
     numfmt(n, buf + 1);
     gfx_text_aligned(&font_small, x, y + CELL_H - 19, CELL_W - 7, ALIGN_RIGHT, buf, COL_TEXT);
   }
-  if (game_equipped_count(list[i])) {
+  if (game_equipped_count(pi, v)) {
     gfx_round_rect(x + 2, y + CELL_H - 17, 11, 11, 5, COL_GREEN_DARK);
     gfx_round_rect(x + 3, y + CELL_H - 16, 9, 9, 4, COL_GREEN);
   }
@@ -215,23 +239,27 @@ static void draw_cell(int i, int x, int y) {
 
 static void draw_details(int x, int y, int w, int h) {
   ui_panel(x, y, w, h);
-  const pet_t *p = &pets[list[selected]];
+  int pi = PET(list[selected]), v = VAR(list[selected]);
+  const pet_t *p = &pets[pi];
   color_t tc = ui_tier_color(p->tier);
   gfx_round_gradient(x + 6, y + 6, w - 12, 50, 8, gfx_mix(COL_WHITE, tc, 60), gfx_mix(COL_WHITE, tc, 140));
-  gfx_sprite(p->sprite, x + (w - 48) / 2, y + 7);
-  const font_t *f = gfx_text_width(&font_medium, p->name) <= w - 12 ? &font_medium : &font_small;
-  gfx_text_aligned(f, x, y + 58, w, ALIGN_CENTER, p->name, COL_TEXT);
+  ui_pet(pi, v, x + (w - 48) / 2, y + 7, PET_FULL, clock_ms);
+  char name[48];
+  ui_pet_name(pi, v, name);
+  const font_t *f = gfx_text_width(&font_medium, name) <= w - 12 ? &font_medium : &font_small;
+  gfx_text_aligned(f, x, y + 58, w, ALIGN_CENTER, name, COL_TEXT);
   int pw = gfx_text_width(&font_small, ui_tier_name(p->tier)) + 10;
   ui_pill(x + (w - pw) / 2, y + 74, ui_tier_name(p->tier), tc, COL_WHITE);
   static const char *const labels[] = {"Puissance", "Possédés", "Équipés"};
-  double values[] = {game_pet_power(list[selected]), game.owned[list[selected]], game_equipped_count(list[selected])};
+  double values[] = {game_pet_power(pi, v), game.owned[pi][v], game_equipped_count(pi, v)};
   char buf[24];
   int ly = y + 90;
   for (int i = 0; i < 3; i++, ly += 12) {
     gfx_text(&font_small, x + 8, ly, labels[i], COL_TEXT_DIM);
     gfx_text_aligned(&font_small, x, ly, w - 8, ALIGN_RIGHT, numfmt(values[i], buf), COL_TEXT);
   }
-  gfx_text_aligned(&font_small, x, ly, w, ALIGN_CENTER, eggs[p->egg].name, COL_BLUE_DARK);
+  gfx_text_aligned(&font_small, x, ly, w, ALIGN_CENTER, p->huge ? "Huge · tous les œufs" : eggs[p->egg].name,
+                   COL_BLUE_DARK);
   gfx_fill_rect(x + 8, ly + 15, w - 16, 1, RGB(200, 210, 230));
   gfx_text_aligned(&font_small, x, ly + 17, w, ALIGN_CENTER, "OK : équiper", COL_TEXT_DIM);
   gfx_text_aligned(&font_small, x, ly + 29, w, ALIGN_CENTER, "Effacer : retirer", COL_TEXT_DIM);

@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "../game/numfmt.h"
 #include "../generated/sprites.h"
+#include "../game/game.h"
 
 void ui_background(color_t top, color_t bottom) {
   gfx_vgradient(0, CONTENT_Y, 320, CONTENT_H, top, bottom);
@@ -88,12 +89,12 @@ int ui_pill(int x, int y, const char *text, color_t bg, color_t fg) {
 
 color_t ui_tier_color(int tier) {
   static const color_t colors[TIER_COUNT] = {COL_RARITY_BASIC, COL_RARITY_RARE, COL_RARITY_EPIC,
-                                             COL_RARITY_LEGENDARY, COL_RARITY_MYTHICAL};
+                                             COL_RARITY_LEGENDARY, COL_RARITY_MYTHICAL, COL_RARITY_EXCLUSIVE};
   return colors[tier];
 }
 
 const char *ui_tier_name(int tier) {
-  static const char *const names[TIER_COUNT] = {"Basique", "Rare", "Épique", "Légendaire", "Mythique"};
+  static const char *const names[TIER_COUNT] = {"Basique", "Rare", "Épique", "Légendaire", "Mythique", "Exclusif"};
   return names[tier];
 }
 
@@ -130,4 +131,64 @@ void ui_message_draw(void) {
   gfx_round_rect(x, y + 2, w, 24, 12, COL_SHADOW);
   gfx_round_gradient(x, y, w, 24, 12, COL_BAR_LIGHT, COL_BAR);
   gfx_text(&font_medium, x + 12, y + 5, message, COL_WHITE);
+}
+
+/* --- Pets with their variant --- */
+
+void ui_sparkles(int x, int y, int w, int h, uint32_t t) {
+  for (int i = 0; i < 3; i++) {
+    uint32_t k = t / 260 + (uint32_t)i * 7;
+    uint32_t hash = k * 2654435761u;
+    int sx = x + (int)(hash % (uint32_t)w), sy = y + (int)((hash >> 12) % (uint32_t)h);
+    int size = 1 + (int)((t / 65 + (uint32_t)i) % 4 == 0) + (int)((t / 130 + (uint32_t)i) % 3 == 0);
+    gfx_fill_rect(sx - size, sy, 2 * size + 1, 1, COL_WHITE);
+    gfx_fill_rect(sx, sy - size, 1, 2 * size + 1, COL_WHITE);
+  }
+}
+
+void ui_pet(int pet, int variant, int x, int y, int size, uint32_t t) {
+  const sprite_t *s = pets[pet].sprite;
+  int level = variant_level(variant);
+  gfx_set_effect(level == VAR_GOLDEN ? GFX_EFFECT_GOLDEN : level == VAR_RAINBOW ? GFX_EFFECT_RAINBOW : GFX_EFFECT_NONE,
+                 (int)(t / 12));
+  int px = 48;
+  if (size == PET_HALF) gfx_sprite_half(s, x, y), px = 24;
+  else if (size == PET_FULL) gfx_sprite(s, x, y);
+  else gfx_sprite_scaled(s, x, y, size == PET_X2 ? 2 : 3), px = size == PET_X2 ? 96 : 144;
+  gfx_set_effect(GFX_EFFECT_NONE, 0);
+  if (variant_shiny(variant)) ui_sparkles(x, y, px, px, t);
+}
+
+char *ui_pet_name(int pet, int variant, char *buf) {
+  char *q = buf;
+  static const char *const prefix[3] = {"", "Golden ", "Rainbow "};
+  if (variant_shiny(variant)) for (const char *s = "Shiny "; *s;) *q++ = *s++;
+  for (const char *s = prefix[variant_level(variant)]; *s;) *q++ = *s++;
+  for (const char *s = pets[pet].name; *s;) *q++ = *s++;
+  *q = 0;
+  return buf;
+}
+
+/* --- Items --- */
+
+static const char *const potion_names[POTION_TYPE_COUNT] = {"Coins", "Dégâts", "Diamants", "Chance", "Trésor"};
+static const char *const enchant_names[ENCHANT_TYPE_COUNT] = {"Coins", "Diamants", "Chance", "Force", "Coup",
+                                                              "Trésor"};
+
+char *ui_item_name(int item, char *buf) {
+  static const char *const roman[4] = {"", " I", " II", " III"};
+  bool enchant = item >= ITEM_ENCHANT;
+  const char *kind = enchant ? "Enchant " : "Potion ";
+  const char *name = enchant ? enchant_names[enchants[item - ITEM_ENCHANT].type] : potion_names[potions[item].type];
+  int tier = enchant ? enchants[item - ITEM_ENCHANT].tier : potions[item].tier;
+  char *q = buf;
+  for (const char *s = kind; *s;) *q++ = *s++;
+  for (const char *s = name; *s;) *q++ = *s++;
+  for (const char *s = roman[tier]; *s;) *q++ = *s++;
+  *q = 0;
+  return buf;
+}
+
+const sprite_t *ui_item_sprite(int item) {
+  return item >= ITEM_ENCHANT ? enchants[item - ITEM_ENCHANT].sprite : potions[item].sprite;
 }

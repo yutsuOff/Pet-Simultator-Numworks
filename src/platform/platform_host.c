@@ -1,6 +1,6 @@
 /* PC backend: renders into a memory framebuffer and replays a key script.
  *
- *   petsim-host [--out DIR] [--rich] [--storage FILE] "SCRIPT"
+ *   petsim-host [--out DIR] [--rich] [--huge] [--storage FILE] "SCRIPT"
  *
  * SCRIPT is a space-separated list of tokens, one per frame:
  *   L R U D OK BACK HOME SHIFT TOOLBOX 0-9   press the key for one frame (then release one frame)
@@ -27,7 +27,7 @@ static int wait_frames;
 static uint64_t current_keys;
 static bool release_frame;
 static const char *out_dir = "output/screens";
-static bool rich;
+static bool rich, huge;
 static const char *storage_file;
 
 /* Emulated Epsilon storage: | magic | records (42 KiB) | magic | */
@@ -124,6 +124,7 @@ void platform_push_rect(int x, int y, int w, int h, const uint16_t *pixels) {
 uint64_t platform_keys(void) { return current_keys; }
 
 bool platform_debug_rich(void) { return rich; }
+bool platform_debug_huge(void) { return huge; }
 
 uint32_t platform_millis(void) { return now_ms; }
 
@@ -167,6 +168,7 @@ int main(int argc, char **argv) {
   int i = 1;
   for (; i < argc && strncmp(argv[i], "--", 2) == 0; i++) {
     if (strcmp(argv[i], "--rich") == 0) rich = true;
+    else if (strcmp(argv[i], "--huge") == 0) huge = true;
     else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) out_dir = argv[++i];
     else if (strcmp(argv[i], "--storage") == 0 && i + 1 < argc) storage_file = argv[++i];
   }

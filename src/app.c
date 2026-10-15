@@ -7,11 +7,11 @@
 #include "screens/screens.h"
 #include "ui/ui.h"
 
-#define VERSION "v0.4 · M2"
+#define VERSION "v0.5 · M4"
 
 static const screen_t *const screens[] = {
   &screen_farm, &screen_pets, &screen_eggs, &screen_zones,
-  &screen_upgrades, &screen_index, &screen_quests,
+  &screen_upgrades, &screen_index, &screen_quests, &screen_items,
 };
 #define SCREEN_COUNT (int)(sizeof(screens) / sizeof(screens[0]))
 
@@ -94,6 +94,30 @@ static void draw_save_details(void) {
   gfx_text(&font_small, 28, y + 122, "Retour : fermer", COL_BLUE_DARK);
 }
 
+/* --- Quests: finished quests give stars, stars give the rank rewards --- */
+
+static char quest_text_buf[48];
+
+static int check_quests(uint32_t now) {
+  bool ranked_up;
+  int stars = quests_update(&ranked_up);
+  if (!stars) return 0;
+  char *q = quest_text_buf;
+  if (ranked_up) {
+    for (const char *s = "Nouveau rang : "; *s;) *q++ = *s++;
+    for (const char *s = ranks[game.rank].name; *s;) *q++ = *s++;
+    *q++ = ' ';
+    *q++ = '!';
+  } else {
+    for (const char *s = "Quête terminée ! +"; *s;) *q++ = *s++;
+    *q++ = (char)('0' + stars);
+    for (const char *s = " ★"; *s;) *q++ = *s++;
+  }
+  *q = 0;
+  ui_message(quest_text_buf, now);
+  return SCREEN_REDRAW_ALL;
+}
+
 /* --- Title screen --- */
 
 static void draw_title(void) {
@@ -131,6 +155,13 @@ static void draw_game(void) {
   screens[current]->draw();
   ui_message_draw();
   ui_top_bar(z->name, z->accent, game.coins, game.diamonds);
+  /* active potions, after the zone badge */
+  int bx = gfx_text_width(&font_medium, z->name) + 22;
+  for (int t = 0; t < POTION_TYPE_COUNT; t++) {
+    if (!game.boost_tier[t]) continue;
+    gfx_sprite_half(potions[t * 3 + game.boost_tier[t] - 1].sprite, bx, 3);
+    bx += 17;
+  }
   tab_t tabs[SCREEN_COUNT];
   for (int i = 0; i < SCREEN_COUNT; i++) {
     tabs[i].label = screens[i]->label;
@@ -147,7 +178,7 @@ static void switch_to(int index) {
 }
 
 static int shortcut_tab(const input_t *in) {
-  static const int keys[] = {KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7};
+  static const int keys[] = {KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8};
   for (int i = 0; i < SCREEN_COUNT; i++) {
     if (input_pressed(in, keys[i])) return i;
   }
@@ -190,16 +221,28 @@ static int update_game(const input_t *in, uint32_t now) {
 
 int app_main(void) {
   platform_init();
+  game_random = platform_random;
   game_init();
   save_init();
   game_claim_index_rewards(); /* eggs completed before the index rewards existed */
-  if (platform_debug_rich()) game.coins = 2e7, game.diamonds = 600;
+  quests_refill();
+  if (platform_debug_rich()) { /* screenshots of a later game */
+    game.coins = 2e7, game.diamonds = 600;
+    for (int i = 0; i < POTION_COUNT; i += 2) game_give_potion(i, 1 + i % 3);
+    for (int i = 1; i < ENCHANT_COUNT; i += 3) game_give_enchant(i, 1);
+    game.owned[HUGE_FIRST][VAR_NORMAL] = 1, game.owned[2][VAR_SHINY + VAR_GOLDEN] = 1, game.owned[1][VAR_RAINBOW] = 1;
+    game.discovered[HUGE_FIRST / 8] |= (uint8_t)(1 << (HUGE_FIRST % 8));
+  }
+  game_debug_next_huge = platform_debug_huge();
   input_t in = {0};
   /* Ignore the keys still held from launching the app. */
   in.held = platform_keys();
   int redraw = SCREEN_REDRAW_ALL;
+  uint32_t last = platform_millis();
   for (;;) {
     uint32_t now = platform_millis();
+    uint32_t elapsed = now - last;
+    last = now;
     input_update(&in, platform_keys(), now);
     if (input_pressed(&in, KEY_HOME)) break;
     if (on_title) {
@@ -222,6 +265,13 @@ int app_main(void) {
     } else {
       redraw |= update_game(&in, now);
       if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
+      /* potions run only while playing */
+      int active = 0;
+      for (int t = 0; t < POTION_TYPE_COUNT; t++) active += game.boost_tier[t] != 0;
+      game_tick_boosts(elapsed > 1000 ? 1000 : elapsed);
+      for (int t = 0; t < POTION_TYPE_COUNT; t++) active -= game.boost_tier[t] != 0;
+      if (active) redraw |= SCREEN_REDRAW_ALL; /* a potion ended */
+      redraw |= check_quests(now);
       save_tick(now);
       storage_result_t r = save_last_result();
       if (r != reported_result) { /* tell the player once when saving starts failing */
