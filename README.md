@@ -20,8 +20,10 @@ Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION
 - **Variantes** : à chaque œuf, 2 % de Golden, 0,5 % de Rainbow, 1 sur 1 000 de Shiny
   (couleurs et étincelles à l'écran). **Machine Golden** (zone 7) et **Machine Rainbow**
   (zone 14) : 10 pets identiques (non équipés) → 1 de la variante suivante.
-- **Huges** (rareté Exclusive) : Huge Cat, Huge Dog et Huge Axolotl, 1 chance sur 50 000 dans
-  n'importe quel œuf, avec une animation spéciale.
+- **Huges** (rareté Exclusive) : Huge Cat, Huge Dog et Huge Axolotl, dans n'importe quel œuf,
+  avec une animation spéciale. Chance par œuf : 1/50 000 (normal), 1/75 000 (golden),
+  1/100 000 (shiny), 1/125 000 (rainbow), 1/150 000 (golden shiny), 1/175 000 (rainbow shiny).
+  Puissance : 200 / 225 / 250 / 275 / 300 / 325 % de ton meilleur autre pet (suit ta progression).
 - **Objets** (onglet 8) : potions Coins, Dégâts, Diamants, Chance, Trésor et enchants Coins,
   Diamants, Chance, Force, Coup, Trésor, niveaux I à III (valeurs PS99). Trouvés en cassant des
   objets et dans les récompenses de rang. Potions actives visibles dans la barre du haut.

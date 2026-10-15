@@ -19,6 +19,9 @@ const upgrade_t upgrades[UPG_COUNT] = {
 /* Power of the variants. Golden and rainbow: PS99 wiki (Gold / Rainbow Machine pages,
  * "about +13 %" and "+27 %"); shiny: not published by BIG Games, game choice. */
 static const double variant_power[VARIANT_COUNT] = {1.0, 1.13, 1.27, 1.5, 1.5 * 1.13, 1.5 * 1.27};
+/* Huges, by variant: odds (1 in N) and power (% of the best other pet owned). */
+const uint32_t huge_odds[VARIANT_COUNT] = {50000, 75000, 125000, 100000, 150000, 175000};
+static const double huge_percent[VARIANT_COUNT] = {200, 225, 275, 250, 300, 325};
 #define REBIRTH_STRENGTH 0.75 /* PS99 Rebirth 1: +75 % pet strength */
 
 void game_init(void) {
@@ -62,9 +65,21 @@ int game_team_size(void) {
   return n;
 }
 
+double game_base_power(int pet, int variant) {
+  if (!pets[pet].huge) return pets[pet].power * variant_power[variant];
+  double best = 0;
+  for (int p = 0; p < HUGE_FIRST; p++) {
+    for (int v = 0; v < VARIANT_COUNT; v++) {
+      if (game.owned[p][v] && pets[p].power * variant_power[v] > best) best = pets[p].power * variant_power[v];
+    }
+  }
+  if (best == 0) best = pets[egg_slots[eggs[game_best_egg()].first_slot].pet].power; /* no other pet yet */
+  return best * huge_percent[variant] / 100;
+}
+
 double game_pet_power(int pet, int variant) {
   double strong = 1 + (game_boost_percent(POTION_DAMAGE) + game_enchant_percent(ENCHANT_STRONG)) / 100;
-  return pets[pet].power * variant_power[variant] * (1 + 0.15 * level(UPG_DAMAGE)) * strong *
+  return game_base_power(pet, variant) * (1 + 0.15 * level(UPG_DAMAGE)) * strong *
          (1 + REBIRTH_STRENGTH * game.rebirths);
 }
 
@@ -107,7 +122,7 @@ void game_equip_best(void) {
     for (int p = 0; p < PET_COUNT; p++) {
       for (int v = 0; v < VARIANT_COUNT; v++) {
         if (game_equipped_count(p, v) >= game.owned[p][v]) continue;
-        double power = pets[p].power * variant_power[v];
+        double power = game_base_power(p, v);
         if (best < 0 || power > best_power) best = p, best_v = v, best_power = power;
       }
     }
@@ -221,13 +236,28 @@ static uint32_t uniform(uint32_t n) {
 bool game_open_egg(int egg, hatch_t *out) {
   if (!game_egg_available(egg) || game.coins < eggs[egg].cost) return false;
   game.coins -= eggs[egg].cost;
-  bool huge = uniform(HUGE_ODDS) == 0 || game_debug_next_huge;
+  /* huge first: each variant has its own odds (out of a billion) */
+  uint32_t h = uniform(1000000000u), huge_variant = VARIANT_COUNT;
+  for (int v = 0; v < VARIANT_COUNT; v++) {
+    uint32_t w = 1000000000u / huge_odds[v];
+    if (h < w) {
+      huge_variant = (uint32_t)v;
+      break;
+    }
+    h -= w;
+  }
+  if (game_debug_next_huge && huge_variant == VARIANT_COUNT) huge_variant = VAR_NORMAL;
   game_debug_next_huge = false;
-  int pet = huge ? HUGE_FIRST + (int)uniform(HUGE_COUNT) : egg_slots[egg_roll(egg, game_random)].pet;
-  uint32_t r = uniform(1000000);
-  int variant = r < RAINBOW_PER_MILLION ? VAR_RAINBOW
-                : r < RAINBOW_PER_MILLION + GOLDEN_PER_MILLION ? VAR_GOLDEN : VAR_NORMAL;
-  if (uniform(1000000) < SHINY_PER_MILLION) variant += VAR_SHINY;
+  int pet, variant;
+  if (huge_variant < VARIANT_COUNT) {
+    pet = HUGE_FIRST + (int)uniform(HUGE_COUNT);
+    variant = (int)huge_variant;
+  } else {
+    pet = egg_slots[egg_roll(egg, game_random)].pet;
+    uint32_t r = uniform(1000000);
+    variant = r < RAINBOW_PER_MILLION ? VAR_RAINBOW : r < RAINBOW_PER_MILLION + GOLDEN_PER_MILLION ? VAR_GOLDEN : VAR_NORMAL;
+    if (uniform(1000000) < SHINY_PER_MILLION) variant += VAR_SHINY;
+  }
   out->pet = (uint8_t)pet;
   out->variant = (uint8_t)variant;
   out->is_new = !game_discovered(pet);

@@ -21,7 +21,9 @@ static inline bool variant_shiny(int v) { return v >= VAR_SHINY; }
 #define RAINBOW_PER_MILLION 5000  /* 0.5 % */
 #define GOLDEN_PER_MILLION 20000  /* 2 % */
 #define SHINY_PER_MILLION 1000    /* 1 in 1,000 */
-#define HUGE_ODDS 50000           /* 1 in 50,000 for a huge (one of the HUGE_COUNT, at random) */
+/* Huges: each variant has its own odds (1 in N per egg), then one of the HUGE_COUNT at
+ * random. Normal 50k, golden 75k, shiny 100k, rainbow 125k, golden shiny 150k, rainbow shiny 175k. */
+extern const uint32_t huge_odds[VARIANT_COUNT];
 
 /* Machines (PS99): 10 identical pets -> 1 of the next level. They stand in a zone. */
 #define MACHINE_INPUT 10
@@ -101,6 +103,9 @@ int game_team_slots(void);          /* BASE_TEAM + "Équipe" upgrade */
 int game_equipped_count(int pet, int variant);
 int game_team_size(void);
 double game_pet_power(int pet, int variant); /* with every bonus */
+/* Before bonuses. A huge is a percentage of the best other pet owned
+ * (200 %, golden 225 %, shiny 250 %, rainbow 275 %, golden shiny 300 %, rainbow shiny 325 %). */
+double game_base_power(int pet, int variant);
 double game_team_power(void);       /* damage per second of the whole team */
 bool game_equip(int pet, int variant);   /* adds one copy to the team; false if full or none left */
 bool game_unequip(int pet, int variant); /* removes one copy from the team */

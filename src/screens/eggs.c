@@ -228,10 +228,14 @@ static void draw_crack(int cx, int cy, int segments) {
 /* Horizontal center of egg/pet number i of the batch. */
 static int column(int i) { return hatch_count == 1 ? 160 : hatch_count == 2 ? 104 + i * 112 : 56 + i * 104; }
 
-static void chance_text(int pet, char *buf) {
+static void chance_text(int pet, int variant, char *buf) {
   buf[0] = 0;
-  if (pets[pet].huge) {
-    for (const char *src = "1/50 000"; (*buf++ = *src++);) {}
+  if (pets[pet].huge) { /* "1/75 000" */
+    unsigned k = huge_odds[variant] / 1000;
+    *buf++ = '1', *buf++ = '/';
+    if (k >= 100) *buf++ = (char)('0' + k / 100);
+    *buf++ = (char)('0' + k / 10 % 10), *buf++ = (char)('0' + k % 10);
+    for (const char *src = " 000"; (*buf++ = *src++);) {}
     return;
   }
   for (int s = eggs[hatch_egg].first_slot; s < eggs[hatch_egg].first_slot + eggs[hatch_egg].slot_count; s++) {
@@ -311,7 +315,7 @@ static void draw_hatch(void) {
     ui_pet(hatch[k].pet, hatch[k].variant, cx - 48, pcy - 44 - bounce, PET_X2, clock_ms);
     char name[48], chance[16];
     ui_pet_name(hatch[k].pet, hatch[k].variant, name);
-    chance_text(hatch[k].pet, chance);
+    chance_text(hatch[k].pet, hatch[k].variant, chance);
     const char *tier = ui_tier_name(p->tier);
     const char *label = variant_label(hatch[k].variant);
     int pw = gfx_text_width(&font_small, tier) + 10, cw = gfx_text_width(&font_small, chance) + 10;

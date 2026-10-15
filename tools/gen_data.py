@@ -11,7 +11,8 @@ computed here by the game rules below, so they are easy to tune in one place:
   - rarity tier of a pet (all egg pets are "Basic" on the PS99 wiki): from its chance in
     its home egg (the last egg that contains it);
   - pet power, breakable HP and rewards: provisional balancing (docs/CONCEPTION.md §6);
-  - huge pets (data/huges.csv, Exclusive): HUGE_POWER x the strongest egg pet;
+  - huge pets (data/huges.csv, Exclusive): their power is computed in the game (a percentage
+    of the best other pet owned), HUGE_POWER x the strongest egg pet is only the table value;
   - rank rewards: diamond bags x DIAMOND_REWARD_SCALE; rewards the game does not have
     (fruits, flags, toys...) become SKIPPED_REWARD_DIAMONDS x rank diamonds; quest goals
     the game does not have are left out.

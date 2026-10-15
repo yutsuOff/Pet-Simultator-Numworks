@@ -77,7 +77,7 @@ static void draw(void) {
   int x = 14 + gfx_text(&font_medium, 14, y + 6, known ? p->name : "???", COL_TEXT) + 8;
   if (known) ui_pill(x, y + 7, ui_tier_name(p->tier), ui_tier_color(p->tier), COL_WHITE);
   if (p->huge) {
-    gfx_text_aligned(&font_small, 6, y + 8, 300, ALIGN_RIGHT, "Huge · tous les œufs · 1/50 000", COL_RARITY_EXCLUSIVE);
+    gfx_text_aligned(&font_small, 6, y + 8, 300, ALIGN_RIGHT, "Huge · tous les œufs · dès 1/50 000", COL_RARITY_EXCLUSIVE);
     return;
   }
   /* home egg and its completion (diamond reward) */

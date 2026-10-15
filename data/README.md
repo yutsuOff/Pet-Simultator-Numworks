@@ -58,10 +58,11 @@ importée a donc au moins un œuf. Pour aller plus loin : `python3 tools/fetch_w
 
 ## Variantes (règles du jeu)
 
-- Golden 2 %, Rainbow 0,5 %, Shiny 1 sur 1 000 à l'éclosion, Huge 1 sur 50 000 (choix du
+- Golden 2 %, Rainbow 0,5 %, Shiny 1 sur 1 000 à l'éclosion, Huges de 1/50 000 à 1/175 000 (choix du
   joueur : le wiki ne donne que 10 %/10 % avec le gamepass Magic Eggs et rien pour Shiny).
 - Puissance : Golden +13 %, Rainbow +27 % (pages Gold / Rainbow Machine), Shiny ×1,5 (non
-  publié par BIG Games), Huge = 3 × le pet d'œuf le plus fort, Rebirth +75 % (Rebirth 1).
+  publié par BIG Games), Huge = 200 % (golden 225, shiny 250, rainbow 275, golden shiny 300,
+  rainbow shiny 325 %) de ton meilleur autre pet, chances 1/50 000 à 1/175 000 selon la variante, Rebirth +75 % (Rebirth 1).
 
 Les images et les noms appartiennent à BIG Games ; textes du wiki sous licence CC BY-SA.
 Projet de fan non officiel et non commercial.

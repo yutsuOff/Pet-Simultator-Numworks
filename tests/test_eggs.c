@@ -127,18 +127,23 @@ static void check_variants(int n) {
   game_init();
   game.coins = 1e300;
   long variants[VARIANT_COUNT] = {0}, huges = 0, shiny = 0;
+  double huge_p = 0;
+  for (int v = 0; v < VARIANT_COUNT; v++) huge_p += (double)(1000000000u / huge_odds[v]) / 1e9;
   for (int i = 0; i < n; i++) {
     hatch_t h;
     game_open_egg(0, &h);
+    if (pets[h.pet].huge) {
+      huges++;
+      continue;
+    }
     variants[variant_level(h.variant)]++;
     shiny += variant_shiny(h.variant);
-    huges += pets[h.pet].huge;
   }
   struct { const char *name; long got; double p; } checks[] = {
     {"golden", variants[VAR_GOLDEN], GOLDEN_PER_MILLION / 1e6},
     {"rainbow", variants[VAR_RAINBOW], RAINBOW_PER_MILLION / 1e6},
     {"shiny", shiny, SHINY_PER_MILLION / 1e6},
-    {"huge", huges, 1.0 / HUGE_ODDS},
+    {"huge", huges, huge_p},
   };
   for (int i = 0; i < 4; i++) {
     double expected = checks[i].p * n, sigma = sqrt(n * checks[i].p * (1 - checks[i].p));
@@ -202,6 +207,14 @@ static void check_progression(void) {
   game_rebirth();
   if (game.zones_unlocked != 1 || game.zone != 0 || game.coins != START_COINS || game.owned[0][0] != 3) FAIL("rebirth reset");
   if (fabs(game_pet_power(0, 0) / power - 1.75) > 1e-9) FAIL("rebirth strength");
+  /* huges: a percentage of the best other pet owned */
+  game_init();
+  game.owned[10][VAR_GOLDEN] = 1;
+  game.owned[HUGE_FIRST][VAR_SHINY] = 1;
+  double best = game_base_power(10, VAR_GOLDEN);
+  if (fabs(game_base_power(HUGE_FIRST, VAR_NORMAL) / best - 2.0) > 1e-9 ||
+      fabs(game_base_power(HUGE_FIRST, VAR_SHINY) / best - 2.5) > 1e-9 ||
+      fabs(game_base_power(HUGE_FIRST + 1, VAR_SHINY + VAR_RAINBOW) / best - 3.25) > 1e-9) FAIL("huge power");
   if (game_can_rebirth()) FAIL("second rebirth");
 }
 
