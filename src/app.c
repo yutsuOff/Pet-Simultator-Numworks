@@ -3,10 +3,11 @@
 #include "generated/sprites.h"
 #include "input/input.h"
 #include "platform/platform.h"
+#include "save/save.h"
 #include "screens/screens.h"
 #include "ui/ui.h"
 
-#define VERSION "v0.2 · M1 · données PS99"
+#define VERSION "v0.3 · M1 · sauvegarde"
 
 static const screen_t *const screens[] = {
   &screen_farm, &screen_pets, &screen_eggs, &screen_zones,
@@ -18,6 +19,80 @@ static int current;
 static bool tabs_focused;
 static bool on_title = true;
 static bool blink_on = true;
+static bool save_details; /* title screen: Toolbox shows the save diagnostic */
+static storage_result_t reported_result = STORAGE_OK;
+
+/* --- Save status --- */
+
+static const char *save_status_text(color_t *c) {
+  switch (save_status()) {
+    case SAVE_LOADED: *c = RGB(200, 255, 200); return "Partie chargée · sauvegarde auto";
+    case SAVE_NEW_GAME: *c = COL_WHITE; return "Nouvelle partie · sauvegarde auto";
+    case SAVE_UNREADABLE: *c = RGB(255, 210, 120); return "petsim.py illisible : pas de sauvegarde";
+    case SAVE_TOO_NEW: *c = RGB(255, 210, 120); return "Sauvegarde d'une version plus récente";
+    default: *c = RGB(255, 210, 120); return "Sauvegarde indisponible";
+  }
+}
+
+static const char *storage_result_text(storage_result_t r) {
+  switch (r) {
+    case STORAGE_OK: return "OK";
+    case STORAGE_FULL: return "stockage plein";
+    case STORAGE_MOVED: return "petsim.py modifié";
+    default: return "stockage illisible";
+  }
+}
+
+static char *put_text(char *q, const char *s) {
+  while (*s) *q++ = *s++;
+  return q;
+}
+
+static char *put_hex(char *q, uint32_t v) {
+  q = put_text(q, "0x");
+  for (int i = 28; i >= 0; i -= 4) *q++ = "0123456789ABCDEF"[(v >> i) & 15];
+  return q;
+}
+
+static char *put_dec(char *q, long v) {
+  char tmp[12];
+  int n = 0;
+  do tmp[n++] = (char)('0' + v % 10), v /= 10;
+  while (v);
+  while (n) *q++ = tmp[--n];
+  return q;
+}
+
+static void draw_save_details(void) {
+  ui_panel(14, 24, 292, 192);
+  gfx_text(&font_big, 28, 34, "Sauvegarde", COL_TEXT);
+  char line[64], *q;
+  int y = 64;
+  uint32_t address;
+  long used, size;
+  if (save_storage_info(&address, &used, &size)) {
+    q = put_hex(put_text(line, "Stockage Epsilon : "), address);
+    *q = 0;
+    gfx_text(&font_small, 28, y, line, COL_TEXT);
+    q = put_text(put_dec(put_text(line, "Utilisé : "), used), " / ");
+    q = put_text(put_dec(q, size), " octets");
+    *q = 0;
+    gfx_text(&font_small, 28, y + 16, line, COL_TEXT);
+  } else {
+    gfx_text(&font_small, 28, y, "Stockage Epsilon introuvable :", COL_RED);
+    gfx_text(&font_small, 28, y + 16, "la partie ne sera pas enregistrée.", COL_TEXT);
+  }
+  color_t c;
+  gfx_text(&font_small, 28, y + 32, save_status_text(&c), COL_TEXT);
+  q = put_text(put_text(line, "Dernière écriture : "), storage_result_text(save_last_result()));
+  *q = 0;
+  gfx_text(&font_small, 28, y + 48, line, COL_TEXT);
+  gfx_fill_rect(28, y + 68, 264, 1, RGB(200, 210, 230));
+  gfx_text(&font_small, 28, y + 74, "Fichier : petsim.py (visible dans l'app Python).", COL_TEXT_DIM);
+  gfx_text(&font_small, 28, y + 90, "Le supprimer recommence une nouvelle partie.", COL_TEXT_DIM);
+  gfx_text(&font_small, 28, y + 106, "Test : joue, quitte avec Home, relance l'app.", COL_TEXT_DIM);
+  gfx_text(&font_small, 28, y + 122, "Retour : fermer", COL_BLUE_DARK);
+}
 
 /* --- Title screen --- */
 
@@ -35,10 +110,17 @@ static void draw_title(void) {
   for (int i = 0; i < 4; i++) gfx_sprite(pets[starters[i]].sprite, 22 + i * 58 + (i >= 2) * 52, 134);
   gfx_sprite(eggs[0].sprite, 136, 130);
   if (blink_on) {
-    gfx_text_aligned(&font_medium, 1, 191, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_SHADOW);
-    gfx_text_aligned(&font_medium, 0, 190, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_WHITE);
+    gfx_text_aligned(&font_medium, 1, 187, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_SHADOW);
+    gfx_text_aligned(&font_medium, 0, 186, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_WHITE);
   }
-  gfx_text(&font_small, 6, 224, VERSION, gfx_mix(COL_WHITE, COL_SHADOW, 80));
+  color_t c;
+  const char *status = save_status_text(&c);
+  gfx_text_aligned(&font_small, 1, 207, 320, ALIGN_CENTER, status, COL_SHADOW);
+  gfx_text_aligned(&font_small, 0, 206, 320, ALIGN_CENTER, status, c);
+  gfx_text_shadow(&font_small, 6, 225, VERSION, COL_WHITE, gfx_mix(COL_SHADOW, COL_GREEN_DARK, 120));
+  int tw = gfx_text_width(&font_small, "Toolbox : sauvegarde");
+  gfx_text_shadow(&font_small, 314 - tw, 225, "Toolbox : sauvegarde", COL_WHITE, gfx_mix(COL_SHADOW, COL_GREEN_DARK, 120));
+  if (save_details) draw_save_details();
 }
 
 /* --- Game screens --- */
@@ -109,6 +191,7 @@ static int update_game(const input_t *in, uint32_t now) {
 int app_main(void) {
   platform_init();
   game_init();
+  save_init();
   if (platform_debug_rich()) game.coins = 2e7;
   input_t in = {0};
   /* Ignore the keys still held from launching the app. */
@@ -120,11 +203,15 @@ int app_main(void) {
     if (input_pressed(&in, KEY_HOME)) break;
     if (on_title) {
       bool blink = (now / 500) % 2 == 0;
-      if (blink != blink_on) {
+      if (blink != blink_on && !save_details) {
         blink_on = blink;
-        gfx_render(draw_title, 185, 210);
+        gfx_render(draw_title, 180, 206);
       }
-      if (input_pressed(&in, KEY_OK) || input_pressed(&in, KEY_EXE)) {
+      if (input_pressed(&in, KEY_TOOLBOX) || (save_details && input_pressed(&in, KEY_BACK))) {
+        save_details = !save_details;
+        gfx_render(draw_title, 0, 240);
+      } else if (input_pressed(&in, KEY_OK) || input_pressed(&in, KEY_EXE)) {
+        save_details = false;
         on_title = false;
         switch_to(0);
         gfx_render(draw_game, 0, 240);
@@ -134,11 +221,21 @@ int app_main(void) {
     } else {
       redraw |= update_game(&in, now);
       if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
+      save_tick(now);
+      storage_result_t r = save_last_result();
+      if (r != reported_result) { /* tell the player once when saving starts failing */
+        reported_result = r;
+        if (r != STORAGE_OK) {
+          ui_message(r == STORAGE_FULL ? "Sauvegarde : stockage plein" : "Sauvegarde impossible", now);
+          redraw |= SCREEN_REDRAW_CONTENT;
+        }
+      }
       if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
       else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
     }
     redraw = 0;
     if (!platform_end_frame()) break;
   }
+  if (!on_title) save_now();
   return 0;
 }

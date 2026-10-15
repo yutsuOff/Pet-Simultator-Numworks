@@ -309,26 +309,31 @@ Fournis-tu aussi les œufs, les objets à casser, les fonds de zone, l'icône de
 - Taille du stockage partagé avec tes scripts Python : quelques dizaines de Ko → la sauvegarde
   doit être **compacte** (objectif < 4 Ko).
 
-### 8.2 Ma proposition (honnête)
+### 8.2 Ce qui est fait (v0.3, pour N0120 / Epsilon 26.4.0)
 
-1. **Sauvegarde principale** dans le stockage Epsilon via `storage.c`, sous forme d'un fichier
-   `petsim.py` contenant les données encodées en commentaire + somme de contrôle.
-   - Avantage attendu : un fichier `.py` est **visible dans l'app Python**, donc il devrait pouvoir
-     être récupéré sur ordinateur comme n'importe quel script (outils officiels/communautaires de
-     transfert) et être conservé lors des mises à jour d'Epsilon, qui préservent les scripts.
-     → ce serait notre **sauvegarde de secours** en cas de reset. *À confirmer sur ta calculatrice.*
-   - Sauvegarde automatique toutes les 2 minutes de jeu, après chaque événement important
-     (éclosion rare, achat de zone) et en quittant avec Home.
-   - Double écriture + vérification (checksum) → une sauvegarde corrompue n'écrase jamais la bonne.
-2. **Statut : expérimental tant que ce n'est pas testé sur TA calculatrice.** Je prévois un
-   petit écran de diagnostic (« Test de sauvegarde ») pour le vérifier dès la première version.
-3. **Code de sauvegarde à recopier** : je le déconseille comme solution principale — une
-   sauvegarde complète ferait plusieurs milliers de caractères. Je ne le prévois qu'en dernier
-   recours, réduit à l'essentiel (monnaies, zones, upgrades, meilleurs pets).
+Vérifié dans le code source d'Epsilon (dépôt `numworks/epsilon`, octobre 2026) :
 
-**[À DÉCIDER] Q10 — Valides-tu cette approche** (stockage Epsilon + fichier `.py` exportable) ?
+- Epsilon place un **« userland header »** au début de son code, dans chacun des deux
+  emplacements de firmware de la flash externe (0x90010000 / 0x90410000, ou +64 Ko selon le
+  modèle). Il contient l'adresse et la taille du stockage en RAM (42 Ko) et la zone de flash
+  des apps externes. Le jeu choisit l'emplacement dont la zone d'apps contient son propre code,
+  puis vérifie les « magic numbers » du stockage avant d'y toucher.
+- Format du stockage : `| magic | enregistrements… | 0x0000 | libre | magic |`, chaque
+  enregistrement = taille (16 bits) + nom (`petsim.py\0`) + contenu. Un script Python = 1 octet
+  d'état + texte.
+- **Sécurité des scripts** : Epsilon garde en cache l'adresse du dernier enregistrement utilisé,
+  donc le jeu ne déplace **jamais** un enregistrement existant : `petsim.py` a une taille fixe
+  (1 Ko) et est réécrit sur place ; à la création, il est ajouté après le dernier. Si ce n'est
+  pas possible (stockage plein, fichier modifié), le jeu n'écrit rien et le signale.
+- Contenu : 2 lignes de commentaire Python, l'état du jeu en binaire versionné + CRC32 encodé
+  en base64 (~310 caractères). Un fichier abîmé, modifié ou venant d'une version plus récente
+  n'est jamais écrasé.
+- Écriture : quelques secondes après chaque changement, et en quittant avec Home.
+- Tests PC : `tests/test_save.c` (aucun enregistrement déplacé, refus si plein, CRC) et le
+  stockage émulé de `petsim-host --storage FICHIER` (quitter puis relancer).
 
----
+**Statut : expérimental tant que ce n'est pas confirmé sur la calculatrice.** Test : jouer,
+quitter avec Home, relancer → l'écran titre doit dire « Partie chargée » (Toolbox : détails).
 
 ## 9. Architecture technique
 
@@ -398,7 +403,7 @@ tester sur ta calculatrice.
 
 ## 11. Questions ouvertes (récapitulatif)
 
-1. **Modèle** (N0110/N0115/N0120) + **version d'Epsilon** + OS officiel ou modifié ?
+1. ~~Modèle~~ : N0120, Epsilon 26.4.0.
 2. ~~Contenu PS99~~ : fait (œufs 1 à 50 et leurs 37 zones, depuis le wiki).
 3. **Images** : pets, œufs et zones viennent du wiki. Restent les objets à casser, les onglets et
    l'icône : les fournis-tu ?
@@ -410,6 +415,6 @@ tester sur ta calculatrice.
 8. **Inventaire** : pets empilés (×N) ou exemplaires individuels ? Taille de départ ? Supprimer un
    pet rend-il quelque chose (coins/diamonds) ?
 9. **Diamonds** : sources validées (objets rares, coffres, quêtes, succès, index) ?
-10. **Sauvegarde** : approche §8.2 validée ?
+10. ~~Sauvegarde~~ : faite (§8.2), à confirmer sur ta N0120.
 11. **Langue** de l'interface : français avec noms de pets en anglais (comme PS99) ?
 12. **Ouverture multiple** : dès le début, ou débloquée par upgrade (×1 → ×3 → ×8) ?

@@ -1,13 +1,15 @@
 /* PC backend: renders into a memory framebuffer and replays a key script.
  *
- *   petsim-host [--out DIR] [--rich] "SCRIPT"
+ *   petsim-host [--out DIR] [--rich] [--storage FILE] "SCRIPT"
  *
  * SCRIPT is a space-separated list of tokens, one per frame:
  *   L R U D OK BACK HOME SHIFT TOOLBOX 0-9   press the key for one frame (then release one frame)
  *   S+R / S+L                                 shift + right/left
  *   W<n>                                       wait n frames
  *   SHOT:name                                  save DIR/name.ppm
- * Time is simulated (33 ms per frame) so runs are reproducible. */
+ * Time is simulated (33 ms per frame) so runs are reproducible.
+ * --storage FILE keeps the emulated Epsilon storage (Python scripts + save) in FILE
+ * between runs; without it, every run starts with a storage holding one script. */
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +28,48 @@ static uint64_t current_keys;
 static bool release_frame;
 static const char *out_dir = "output/screens";
 static bool rich;
+static const char *storage_file;
+
+/* Emulated Epsilon storage: | magic | records (42 KiB) | magic | */
+#define STORAGE_SIZE (42 * 1024)
+static uint8_t storage[4 + STORAGE_SIZE + 4];
+
+static void put32(uint8_t *p, uint32_t v) {
+  for (int i = 0; i < 4; i++) p[i] = (uint8_t)(v >> (8 * i));
+}
+
+static void storage_load(void) {
+  FILE *f = storage_file ? fopen(storage_file, "rb") : NULL;
+  if (f && fread(storage, 1, sizeof(storage), f) == sizeof(storage)) {
+    fclose(f);
+    return;
+  }
+  if (f) fclose(f);
+  /* a fresh calculator with one Python script */
+  static const char script[] = "\0from math import *\n";
+  const char *name = "hello.py";
+  size_t n = 2 + strlen(name) + 1 + sizeof(script);
+  memset(storage, 0, sizeof(storage));
+  put32(storage, 0xEE0BDDBAu);
+  put32(storage + 4 + STORAGE_SIZE, 0xEE0BDDBAu);
+  storage[4] = (uint8_t)n;
+  storage[5] = (uint8_t)(n >> 8);
+  memcpy(storage + 6, name, strlen(name) + 1);
+  memcpy(storage + 6 + strlen(name) + 1, script, sizeof(script));
+}
+
+static void storage_store(void) {
+  FILE *f = storage_file ? fopen(storage_file, "wb") : NULL;
+  if (!f) return;
+  fwrite(storage, 1, sizeof(storage), f);
+  fclose(f);
+}
+
+bool platform_storage(uint8_t **records, size_t *size) {
+  *records = storage + 4;
+  *size = STORAGE_SIZE;
+  return true;
+}
 
 extern int app_main(void);
 
@@ -119,18 +163,22 @@ bool platform_end_frame(void) {
 }
 
 int main(int argc, char **argv) {
-  static char *storage[4096];
+  static char *storage_tokens[4096];
   int i = 1;
   for (; i < argc && strncmp(argv[i], "--", 2) == 0; i++) {
     if (strcmp(argv[i], "--rich") == 0) rich = true;
     else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) out_dir = argv[++i];
+    else if (strcmp(argv[i], "--storage") == 0 && i + 1 < argc) storage_file = argv[++i];
   }
   for (; i < argc; i++) {
     char *copy = strdup(argv[i]);
     for (char *t = strtok(copy, " \n\t"); t && token_count < 4096; t = strtok(NULL, " \n\t")) {
-      storage[token_count++] = t;
+      storage_tokens[token_count++] = t;
     }
   }
-  tokens = storage;
-  return app_main();
+  tokens = storage_tokens;
+  storage_load();
+  int r = app_main();
+  storage_store();
+  return r;
 }

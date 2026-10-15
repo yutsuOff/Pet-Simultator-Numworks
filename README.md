@@ -14,7 +14,8 @@ Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION
 - **Pets** : inventaire (pets empilés ×N), détail, équipe de 5.
 - **Zones** : les 37 zones avec leur capture, déblocage dans l'ordre, téléportation.
 - **Index** : les 140 pets, découverts en couleur, les autres en silhouette.
-- Pas encore : sauvegarde (la partie repart de zéro à chaque lancement), améliorations, quêtes.
+- **Sauvegarde automatique** dans le fichier `petsim.py` (visible dans l'app Python) : voir plus bas.
+- Pas encore : améliorations, quêtes.
 - Images des objets à casser et des onglets : encore provisoires.
 
 ## Installer sur la calculatrice
@@ -26,6 +27,20 @@ Compatible N0110, N0115 et N0120 (pas N0100). Testé sur PC uniquement pour l'in
 3. Dépose `petsim.nwa` et lance l'installation.
 4. Sur la calculatrice : l'app **Pet Sim** apparaît dans le menu d'accueil.
 
+## Sauvegarde
+
+La partie est enregistrée toute seule (quelques secondes après chaque changement, et en quittant
+avec Home) dans un script **`petsim.py`**, visible dans l'app Python. L'écran titre indique
+« Partie chargée » ou « Nouvelle partie » ; la touche Toolbox y affiche le diagnostic.
+
+- Ça tient : quitter l'app, éteindre la calculatrice, lancer d'autres apps.
+- Ça ne tient pas : un reset ou une batterie complètement vide (le stockage d'Epsilon est en RAM).
+- Supprimer `petsim.py` dans l'app Python recommence une nouvelle partie. Ne pas modifier ce
+  fichier (la partie serait déclarée illisible).
+- EADK n'a pas d'API de sauvegarde : le jeu écrit directement dans le stockage d'Epsilon, en
+  suivant son format (code source d'Epsilon). Prévu pour Epsilon 26 ; à revérifier après une
+  mise à jour d'Epsilon.
+
 ## Contrôles
 
 | Touche | Action |
@@ -35,6 +50,7 @@ Compatible N0110, N0115 et N0120 (pas N0100). Testé sur PC uniquement pour l'in
 | ↓ sur la dernière ligne | aller sur la barre d'onglets (←/→ change d'onglet, ↑ revient) |
 | 1 à 7 | onglet direct (Farm, Pets, Œufs, Zones, Amélio., Index, Quêtes) |
 | Retour | fermer l'animation d'œuf, sinon revenir à Farm |
+| Écran titre : Toolbox | diagnostic de la sauvegarde |
 | Pets : OK / Effacer / Toolbox | équiper un exemplaire / en retirer un / équiper les meilleurs |
 | Œufs : OK (pendant l'animation) | passer l'animation, puis rouvrir le même œuf |
 | Œufs, Zones : ←/→ | défiler par page |

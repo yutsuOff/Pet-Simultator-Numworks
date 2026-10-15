@@ -5,6 +5,7 @@
  * platform_eadk.c targets the calculator, platform_host.c a PC (tests, screenshots). */
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define SCREEN_W 320
@@ -29,6 +30,9 @@ uint32_t platform_millis(void);
 uint32_t platform_random(void);
 /* Called once per frame: paces the loop. Returns false when the app must quit. */
 bool platform_end_frame(void);
+/* Epsilon's storage (Python scripts): the record area, after its magic header.
+ * Returns false if it cannot be found safely (saving is then disabled). */
+bool platform_storage(uint8_t **records, size_t *size);
 /* PC screenshots only (petsim-host --rich): start with coins to show a later game. */
 bool platform_debug_rich(void);
 

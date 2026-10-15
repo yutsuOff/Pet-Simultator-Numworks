@@ -96,6 +96,9 @@ test:
 	$(Q) $(BUILD_DIR)/tests/test_numfmt
 	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_eggs.c src/game/game.c src/generated/content.c -lm -o $(BUILD_DIR)/tests/test_eggs
 	$(Q) $(BUILD_DIR)/tests/test_eggs
+	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_save.c src/save/save.c src/save/storage.c src/game/game.c \
+	  src/generated/content.c -lm -o $(BUILD_DIR)/tests/test_save
+	$(Q) $(BUILD_DIR)/tests/test_save
 
 # --- Generated sources (committed, so building does not need Python) ---
 
