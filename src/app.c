@@ -214,7 +214,12 @@ static int update_game(const input_t *in, uint32_t now) {
   return r;
 }
 
-int app_main(void) {
+/* State of the main loop between two frames (app_step). */
+static input_t in;
+static int redraw = SCREEN_REDRAW_ALL;
+static uint32_t last;
+
+void app_init(void) {
   platform_init();
   game_random = platform_random;
   game_init();
@@ -229,77 +234,84 @@ int app_main(void) {
     game.discovered[HUGE_FIRST / 8] |= (uint8_t)(1 << (HUGE_FIRST % 8));
   }
   game_debug_next_huge = platform_debug_huge();
-  input_t in = {0};
   /* Ignore the keys still held from launching the app. */
   in.held = platform_keys();
-  int redraw = SCREEN_REDRAW_ALL;
-  uint32_t last = platform_millis();
-  for (;;) {
-    uint32_t now = platform_millis();
-    uint32_t elapsed = now - last;
-    last = now;
-    input_update(&in, platform_keys(), now);
-    if (admin_check_code(&in)) { /* the final OK opens the admin menu, nothing else */
-      if (on_title) on_title = false, save_details = false, switch_to(0);
-      gfx_render(draw_game, 0, 240);
-      redraw = 0;
-      if (!platform_end_frame()) break;
-      continue;
-    }
-    if (admin_is_open() && !on_title) {
-      redraw |= admin_update(&in, now);
-      if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
-      if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
-      else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
-      redraw = 0;
-      save_tick(now);
-      if (!platform_end_frame()) break;
-      continue;
-    }
-    if (input_pressed(&in, KEY_HOME)) break;
-    if (on_title) {
-      bool blink = (now / 500) % 2 == 0;
-      if (blink != blink_on && !save_details) {
-        blink_on = blink;
-        gfx_render(draw_title, 180, 206);
-      }
-      if (input_pressed(&in, KEY_TOOLBOX) || (save_details && input_pressed(&in, KEY_BACK))) {
-        save_details = !save_details;
-        gfx_render(draw_title, 0, 240);
-      } else if (input_pressed(&in, KEY_OK) || input_pressed(&in, KEY_EXE)) {
-        save_details = false;
-        on_title = false;
-        switch_to(0);
-        gfx_render(draw_game, 0, 240);
-      } else if (redraw) {
-        gfx_render(draw_title, 0, 240);
-      }
-    } else {
-      redraw |= update_game(&in, now);
-      if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
-      /* potions run only while playing */
-      int active = 0;
-      for (int t = 0; t < POTION_TYPE_COUNT; t++) active += game.boost_tier[t] != 0;
-      game_tick_boosts(elapsed > 1000 ? 1000 : elapsed);
-      game_tick_daycare(elapsed > 1000 ? 1000 : elapsed);
-      for (int t = 0; t < POTION_TYPE_COUNT; t++) active -= game.boost_tier[t] != 0;
-      if (active) redraw |= SCREEN_REDRAW_ALL; /* a potion ended */
-      redraw |= check_quests(now);
-      save_tick(now);
-      storage_result_t r = save_last_result();
-      if (r != reported_result) { /* tell the player once when saving starts failing */
-        reported_result = r;
-        if (r != STORAGE_OK) {
-          ui_message(r == STORAGE_FULL ? "Sauvegarde : stockage plein" : "Sauvegarde impossible", now);
-          redraw |= SCREEN_REDRAW_CONTENT;
-        }
-      }
-      if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
-      else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
-    }
+  last = platform_millis();
+}
+
+/* One frame: input, update, drawing. Returns false when the player quits (Home). */
+bool app_step(void) {
+  uint32_t now = platform_millis();
+  uint32_t elapsed = now - last;
+  last = now;
+  input_update(&in, platform_keys(), now);
+  if (admin_check_code(&in)) { /* the final OK opens the admin menu, nothing else */
+    if (on_title) on_title = false, save_details = false, switch_to(0);
+    gfx_render(draw_game, 0, 240);
     redraw = 0;
-    if (!platform_end_frame()) break;
+    return true;
   }
+  if (admin_is_open() && !on_title) {
+    redraw |= admin_update(&in, now);
+    if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
+    if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
+    else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
+    redraw = 0;
+    save_tick(now);
+    return true;
+  }
+  if (input_pressed(&in, KEY_HOME)) return false;
+  if (on_title) {
+    bool blink = (now / 500) % 2 == 0;
+    if (blink != blink_on && !save_details) {
+      blink_on = blink;
+      gfx_render(draw_title, 180, 206);
+    }
+    if (input_pressed(&in, KEY_TOOLBOX) || (save_details && input_pressed(&in, KEY_BACK))) {
+      save_details = !save_details;
+      gfx_render(draw_title, 0, 240);
+    } else if (input_pressed(&in, KEY_OK) || input_pressed(&in, KEY_EXE)) {
+      save_details = false;
+      on_title = false;
+      switch_to(0);
+      gfx_render(draw_game, 0, 240);
+    } else if (redraw) {
+      gfx_render(draw_title, 0, 240);
+    }
+  } else {
+    redraw |= update_game(&in, now);
+    if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
+    /* potions run only while playing */
+    int active = 0;
+    for (int t = 0; t < POTION_TYPE_COUNT; t++) active += game.boost_tier[t] != 0;
+    game_tick_boosts(elapsed > 1000 ? 1000 : elapsed);
+    game_tick_daycare(elapsed > 1000 ? 1000 : elapsed);
+    for (int t = 0; t < POTION_TYPE_COUNT; t++) active -= game.boost_tier[t] != 0;
+    if (active) redraw |= SCREEN_REDRAW_ALL; /* a potion ended */
+    redraw |= check_quests(now);
+    save_tick(now);
+    storage_result_t r = save_last_result();
+    if (r != reported_result) { /* tell the player once when saving starts failing */
+      reported_result = r;
+      if (r != STORAGE_OK) {
+        ui_message(r == STORAGE_FULL ? "Sauvegarde : stockage plein" : "Sauvegarde impossible", now);
+        redraw |= SCREEN_REDRAW_CONTENT;
+      }
+    }
+    if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
+    else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
+  }
+  redraw = 0;
+  return true;
+}
+
+void app_quit(void) {
   if (!on_title) save_now();
+}
+
+int app_main(void) {
+  app_init();
+  while (app_step() && platform_end_frame()) {}
+  app_quit();
   return 0;
 }

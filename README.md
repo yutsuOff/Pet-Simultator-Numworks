@@ -51,6 +51,15 @@ Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION
 - Objets à casser, du moins au plus riche : pièce, tas de pièces, caisse, cadeau, coffre ;
   diamant, tas de diamants. Vraies images PS99 (`assets/art/`). Icônes des onglets : provisoires.
 
+## Jouer sur PC (navigateur)
+
+`make web` compile le même code en WebAssembly (clang + wasi-libc, sans Emscripten) et produit
+une page autonome `output/web/petsim.html` (`web/index.html` + `src/platform/platform_web.c`).
+Clavier : flèches, Entrée = OK, Échap = Retour, E = EXE, Retour arrière = Effacer, T = Toolbox,
+1 à 8 = onglets ; touches à l'écran sur téléphone. La sauvegarde reste dans le navigateur ; on
+peut y coller le contenu de `petsim.py` de la calculatrice pour reprendre sa partie, et copier
+celle du navigateur.
+
 ## Installer sur la calculatrice
 
 Compatible N0110, N0115 et N0120 (pas N0100). Testé sur PC uniquement pour l'instant.

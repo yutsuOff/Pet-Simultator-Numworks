@@ -4,6 +4,7 @@
 #   make run        -> installs the app on a calculator plugged in USB
 #   make host       -> output/petsim-host (PC build, for tests and screenshots)
 #   make screens    -> PNG screenshots of every screen in output/screens/
+#   make web        -> output/web/petsim.html (the game in a browser, needs clang + wasi-libc)
 #   make test       -> unit tests on PC
 #   make balance    -> a bot plays the whole game: time per zone (output/balance.txt)
 #   make assets     -> regenerates src/generated/ from data/, assets/ and tools/ (needs Python 3 + Pillow)
@@ -98,6 +99,24 @@ screens: $(BUILD_DIR)/petsim-host
 	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens --rich "$(SCREENS_RICH)"
 	$(Q) $(BUILD_DIR)/petsim-host --out $(BUILD_DIR)/screens --huge "$(SCREENS_HUGE)"
 	$(Q) python3 tools/ppm_to_png.py $(BUILD_DIR)/screens
+
+# --- Web build (WebAssembly, the page is web/index.html) ---
+
+WEB_CC ?= clang
+WEB_SRC = $(COMMON_SRC) src/platform/platform_web.c
+WEB_CFLAGS = --target=wasm32-wasi -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter
+WEB_LDFLAGS = -nostartfiles -Wl,--no-entry -Wl,-z,stack-size=262144 -Wl,--initial-memory=8388608
+
+.PHONY: web
+web: $(BUILD_DIR)/web/petsim.html
+
+$(BUILD_DIR)/web/petsim.wasm: $(WEB_SRC) $(wildcard src/*.h src/*/*.h)
+	@mkdir -p $(dir $@)
+	@echo "WASM    $@"
+	$(Q) $(WEB_CC) $(WEB_CFLAGS) $(WEB_LDFLAGS) $(WEB_SRC) -lm -o $@
+
+$(BUILD_DIR)/web/petsim.html: $(BUILD_DIR)/web/petsim.wasm web/index.html tools/build_web.py
+	$(Q) python3 tools/build_web.py $< web/index.html $@
 
 # --- Tests ---
 

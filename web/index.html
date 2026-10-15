@@ -1,0 +1,372 @@
+<title>Pet Simulator NumWorks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* Layout: the calculator (screen + NumWorks-style keypad) on the left, how to play and the
+   save on the right; stacked on a phone. Built by tools/build_web.py (make web). */
+:root {
+  --bg: #e9eef8;
+  --ink: #1e2440;
+  --muted: #5d6685;
+  --panel: #ffffff;
+  --line: #cfd7ea;
+  --body: #f7f8fb;        /* calculator plastic */
+  --bezel: #1c2036;
+  --key: #ffffff;
+  --key-ink: #2a3150;
+  --key-edge: #c9cfdf;
+  --accent: #f5a524;      /* NumWorks yellow */
+  --accent-ink: #3a2600;
+  --ok: #2f7de1;
+  --display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --text: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11152a; --ink: #e8ecfa; --muted: #9aa3c4; --panel: #1b2140; --line: #2d3560;
+    --body: #262d52; --bezel: #0a0d1c; --key: #343c68; --key-ink: #eef1ff; --key-edge: #1a2045;
+    --accent: #f7b23d; --accent-ink: #2a1b00; --ok: #5b9cf0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11152a; --ink: #e8ecfa; --muted: #9aa3c4; --panel: #1b2140; --line: #2d3560;
+  --body: #262d52; --bezel: #0a0d1c; --key: #343c68; --key-ink: #eef1ff; --key-edge: #1a2045;
+  --accent: #f7b23d; --accent-ink: #2a1b00; --ok: #5b9cf0; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.page { max-width: 1060px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 700px) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 900px) { .page { grid-template-columns: minmax(0, 1fr); } }
+
+/* --- Calculator --- */
+.calc { background: var(--body); border-radius: 34px 34px 46px 46px; padding: 18px 18px 22px; box-shadow: 0 1px 0 var(--key-edge), 0 18px 40px -18px rgba(20, 30, 70, .35); display: grid; gap: 16px; min-width: 0; }
+.brand { display: flex; justify-content: space-between; align-items: baseline; padding-inline: 6px; }
+.brand b { font-family: var(--display); font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.brand span { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.screen { background: var(--bezel); border-radius: 14px; padding: 12px; }
+canvas { display: block; width: 100%; max-width: 640px; aspect-ratio: 4 / 3; margin: 0 auto; image-rendering: pixelated; border-radius: 3px; background: #000; outline: none; }
+canvas:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
+
+.pad { display: grid; grid-template-columns: auto 1fr auto; gap: 14px 18px; align-items: center; padding-inline: 4px; }
+.dpad { display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); gap: 2px; }
+.dpad .up { grid-area: 1 / 2; } .dpad .left { grid-area: 2 / 1; } .dpad .right { grid-area: 2 / 3; } .dpad .down { grid-area: 3 / 2; }
+.dpad .hub { grid-area: 2 / 2; border-radius: 50%; background: var(--key-edge); margin: 9px; }
+.mid { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.okback { display: grid; grid-template-columns: 58px 58px; gap: 10px; }
+.keys { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.fn { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+button.k { font: 700 14px/1 var(--text); color: var(--key-ink); background: var(--key); border: 0; border-radius: 9px; box-shadow: 0 2px 0 var(--key-edge); min-height: 40px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; display: grid; place-items: center; gap: 1px; padding: 4px 2px; }
+button.k small { font-weight: 600; font-size: 10px; color: var(--muted); }
+button.k:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+button.k.on, button.k:active { transform: translateY(2px); box-shadow: 0 0 0 var(--key-edge); }
+.dpad button.k { min-height: 0; border-radius: 10px; font-size: 16px; }
+button.k.ok { background: var(--ok); color: #fff; border-radius: 50%; width: 58px; height: 58px; box-shadow: 0 3px 0 color-mix(in srgb, var(--ok) 60%, #000); font-size: 15px; }
+button.k.back { border-radius: 50%; width: 58px; height: 58px; }
+button.k.exe { background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 60%, #000); }
+button.k.exe small { color: var(--accent-ink); }
+
+/* --- Side --- */
+.side { display: grid; gap: 18px; min-width: 0; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 4vw, 40px); line-height: 1.05; margin: 0; text-wrap: balance; }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 46ch; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 19px; margin: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td { padding: 5px 0; border-top: 1px solid var(--line); vertical-align: top; }
+tr:first-child td { border-top: 0; }
+td:first-child { white-space: nowrap; padding-right: 14px; width: 1%; }
+kbd { font: 600 12px/1 var(--mono); background: var(--bg); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; color: var(--ink); white-space: nowrap; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.status { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin: 0; }
+textarea { width: 100%; min-height: 84px; font: 12px/1.4 var(--mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical; box-sizing: border-box; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+button.act { font: 700 14px var(--text); border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+button.act.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+button.act:focus-visible { outline: 3px solid var(--ok); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+@media (max-width: 480px) {
+  .calc { padding: 12px 10px 16px; border-radius: 24px 24px 32px 32px; }
+  .screen { padding: 7px; }
+  .dpad { grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); }
+  .okback { grid-template-columns: 50px 50px; }
+  button.k.ok, button.k.back { width: 50px; height: 50px; }
+  .keys { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { button.k.on, button.k:active { transform: none; } }
+</style>
+
+<div class="page">
+  <section class="calc" aria-label="Calculatrice">
+    <div class="brand"><b>NumWorks</b><span>N0120 · Epsilon 26</span></div>
+    <div class="screen"><canvas id="screen" width="320" height="240" tabindex="0" aria-label="Écran du jeu"></canvas></div>
+    <div class="pad">
+      <div class="dpad">
+        <button class="k up" data-key="1" aria-label="Haut">▲</button>
+        <button class="k left" data-key="0" aria-label="Gauche">◀</button>
+        <span class="hub"></span>
+        <button class="k right" data-key="3" aria-label="Droite">▶</button>
+        <button class="k down" data-key="2" aria-label="Bas">▼</button>
+      </div>
+      <div class="mid">
+        <button class="k" data-key="12">shift<small>Maj</small></button>
+        <button class="k" data-key="16">toolbox<small>T</small></button>
+      </div>
+      <div class="okback">
+        <button class="k ok" data-key="4">OK</button>
+        <button class="k back" data-key="5">↩<small>Échap</small></button>
+      </div>
+      <div class="fn">
+        <button class="k" data-key="17">⌫<small>Effacer</small></button>
+        <button class="k exe" data-key="52">EXE<small>E</small></button>
+      </div>
+      <div class="keys">
+        <button class="k" data-key="42">1<small>Farm</small></button>
+        <button class="k" data-key="43">2<small>Pets</small></button>
+        <button class="k" data-key="44">3<small>Œufs</small></button>
+        <button class="k" data-key="36">4<small>Zones</small></button>
+        <button class="k" data-key="37">5<small>Amélio.</small></button>
+        <button class="k" data-key="38">6<small>Index</small></button>
+        <button class="k" data-key="30">7<small>Quêtes</small></button>
+        <button class="k" data-key="31">8<small>Objets</small></button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div>
+      <h1>Pet Simulator NumWorks</h1>
+      <p class="lede">Le vrai jeu de la calculatrice, compilé pour le navigateur : mêmes règles, mêmes images, même sauvegarde.</p>
+    </div>
+    <div class="card">
+      <h2>Touches du clavier</h2>
+      <table>
+        <tr><td><kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd></td><td>se déplacer</td></tr>
+        <tr><td><kbd>Entrée</kbd> <kbd>Espace</kbd></td><td>OK</td></tr>
+        <tr><td><kbd>Échap</kbd></td><td>Retour</td></tr>
+        <tr><td><kbd>E</kbd></td><td>EXE (fusionner, dans la machine de fusion)</td></tr>
+        <tr><td><kbd>⌫</kbd> <kbd>Suppr</kbd></td><td>Effacer</td></tr>
+        <tr><td><kbd>T</kbd></td><td>Toolbox</td></tr>
+        <tr><td><kbd>1</kbd> … <kbd>8</kbd></td><td>onglets (Farm, Pets, Œufs, Zones, Amélio., Index, Quêtes, Objets)</td></tr>
+      </table>
+      <p class="note">Sur téléphone, utilise les touches sous l'écran.</p>
+    </div>
+    <div class="card">
+      <h2>Sauvegarde</h2>
+      <p class="status" id="save-status">Chargement…</p>
+      <p class="note">La partie est gardée dans ce navigateur. Pour reprendre ta partie de la calculatrice, colle ici le contenu de <code>petsim.py</code> (les deux lignes), puis « Charger ».</p>
+      <textarea id="save-text" spellcheck="false" aria-label="Texte de la sauvegarde"></textarea>
+      <div class="row">
+        <button class="act" id="copy">Copier ma sauvegarde</button>
+        <button class="act primary" id="load">Charger</button>
+        <button class="act" id="reset">Nouvelle partie</button>
+      </div>
+      <div class="confirm" id="confirm" hidden>
+        <span id="confirm-text"></span>
+        <button class="act primary" id="confirm-yes">Oui</button>
+        <button class="act" id="confirm-no">Annuler</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+const WASM_BASE64 = "__WASM_BASE64__";
+const STORE_KEY = "petsim-storage-v1";
+const STORAGE_MAGIC = 0xEE0BDDBA;
+const SAVE_HEADER = "# Pet Sim : sauvegarde (ne pas modifier)\n#";
+
+const canvas = document.getElementById("screen");
+const ctx = canvas.getContext("2d");
+const image = ctx.createImageData(320, 240);
+const statusEl = document.getElementById("save-status");
+const textEl = document.getElementById("save-text");
+
+let wasm = null, held = 0n, latched = 0n, running = false, lastSum = -1, lastPersist = 0;
+
+/* --- Keys (same numbering as the calculator) --- */
+const KEYMAP = {
+  ArrowLeft: 0, ArrowUp: 1, ArrowDown: 2, ArrowRight: 3, Enter: 4, " ": 4, Escape: 5,
+  Shift: 12, t: 16, T: 16, Backspace: 17, Delete: 17, e: 52, E: 52, NumpadEnter: 52,
+  "7": 30, "8": 31, "9": 32, "4": 36, "5": 37, "6": 38, "1": 42, "2": 43, "3": 44, "0": 48,
+};
+function keyOf(ev) {
+  if (ev.code === "NumpadEnter") return 52;
+  return KEYMAP[ev.key];
+}
+const typing = () => document.activeElement === textEl;
+addEventListener("keydown", ev => {
+  if (typing() || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  const k = keyOf(ev);
+  if (k === undefined) return;
+  ev.preventDefault();
+  held |= 1n << BigInt(k);
+  latched |= 1n << BigInt(k);
+});
+addEventListener("keyup", ev => {
+  const k = keyOf(ev);
+  if (k !== undefined) held &= ~(1n << BigInt(k));
+});
+addEventListener("blur", () => { held = 0n; });
+
+for (const b of document.querySelectorAll("button.k")) {
+  const bit = 1n << BigInt(b.dataset.key);
+  const down = ev => { ev.preventDefault(); held |= bit; latched |= bit; b.classList.add("on"); };
+  const up = () => { held &= ~bit; b.classList.remove("on"); };
+  b.addEventListener("pointerdown", down);
+  b.addEventListener("pointerup", up);
+  b.addEventListener("pointerleave", up);
+  b.addEventListener("pointercancel", up);
+  b.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.stopPropagation(); ev.preventDefault(); held |= bit; latched |= bit; } });
+  b.addEventListener("keyup", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.stopPropagation(); up(); } });
+}
+
+/* --- Storage (Epsilon's Python scripts, like on the calculator) --- */
+function storageView() { return new Uint8Array(wasm.memory.buffer, wasm.web_storage(), wasm.web_storage_size()); }
+function toB64(bytes) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function fromB64(b64) { return Uint8Array.from(atob(b64), c => c.charCodeAt(0)); }
+function checksum(bytes) {
+  let h = 2166136261;
+  for (let i = 0; i < bytes.length; i++) h = Math.imul(h ^ bytes[i], 16777619);
+  return h >>> 0;
+}
+function persist(force) {
+  const bytes = storageView();
+  const sum = checksum(bytes);
+  if (!force && sum === lastSum) return;
+  try { localStorage.setItem(STORE_KEY, toB64(bytes)); lastSum = sum; } catch (e) { /* private window: not kept */ }
+  showStatus();
+}
+/* Records: | size u16 | name \0 | value |, size 0 ends the list. */
+function findRecord(bytes, name) {
+  let p = 4;
+  while (p + 2 <= bytes.length - 4) {
+    const size = bytes[p] | bytes[p + 1] << 8;
+    if (size === 0) return null;
+    let q = p + 2, n = "";
+    while (bytes[q]) n += String.fromCharCode(bytes[q++]);
+    if (n === name) return { start: p, value: q + 1, end: p + size };
+    p += size;
+  }
+  return null;
+}
+function saveText() {
+  const bytes = storageView();
+  const r = findRecord(bytes, "petsim.py");
+  if (!r) return "";
+  let s = "";
+  for (let i = r.value + 1; i < r.end && bytes[i]; i++) s += String.fromCharCode(bytes[i]);
+  return new TextDecoder().decode(Uint8Array.from(s, c => c.charCodeAt(0)));
+}
+function showStatus() {
+  const t = saveText();
+  statusEl.textContent = t ? `Sauvegarde dans ce navigateur : ${t.length} caractères, enregistrée ${new Date().toLocaleTimeString("fr-FR")}.`
+                           : "Pas encore de sauvegarde : elle se crée quelques secondes après le début de la partie.";
+}
+/* A storage holding only petsim.py with this text (value: status byte 0, text, NUL). */
+function storageWithSave(text, size) {
+  const bytes = new Uint8Array(size);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(0, STORAGE_MAGIC, true);
+  view.setUint32(size - 4, STORAGE_MAGIC, true);
+  const name = new TextEncoder().encode("petsim.py\0");
+  const value = new TextEncoder().encode(text);
+  const recSize = 2 + name.length + 1 + value.length + 1 + 64;
+  bytes[4] = recSize & 255; bytes[5] = recSize >> 8;
+  bytes.set(name, 6);
+  bytes.set(value, 6 + name.length + 1);
+  return bytes;
+}
+
+/* --- Game --- */
+async function start(storageBytes) {
+  running = false;
+  const { instance } = await WebAssembly.instantiate(fromB64(WASM_BASE64), {});
+  wasm = instance.exports;
+  if (storageBytes && storageBytes.length === wasm.web_storage_size()) storageView().set(storageBytes);
+  wasm.web_init((Math.random() * 0xFFFFFFFF) >>> 0 || 1, performance.now() >>> 0);
+  lastSum = checksum(storageView());
+  draw();
+  showStatus();
+  running = true;
+  requestAnimationFrame(frame);
+}
+function draw() {
+  const fb = new Uint16Array(wasm.memory.buffer, wasm.web_framebuffer(), 320 * 240);
+  const d = image.data;
+  for (let i = 0, j = 0; i < fb.length; i++, j += 4) {
+    const c = fb[i];
+    d[j] = (c >> 11) * 255 / 31; d[j + 1] = ((c >> 5) & 63) * 255 / 63; d[j + 2] = (c & 31) * 255 / 31; d[j + 3] = 255;
+  }
+  ctx.putImageData(image, 0, 0);
+}
+function frame(t) {
+  if (!running) return;
+  const keys = held | latched;
+  latched = 0n;
+  const r = wasm.web_frame(t >>> 0, Number(keys & 0xFFFFFFFFn), Number(keys >> 32n));
+  if (r === 1) draw();
+  if (t - lastPersist > 2000) { lastPersist = t; persist(false); }
+  if (r === -1) { persist(true); start(storageView().slice()); return; }
+  requestAnimationFrame(frame);
+}
+function saveNow() { if (wasm) { wasm.web_save(); persist(false); } }
+addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+addEventListener("pagehide", saveNow);
+
+/* --- Save panel --- */
+let pending = null;
+function ask(text, action) {
+  pending = action;
+  document.getElementById("confirm-text").textContent = text;
+  document.getElementById("confirm").hidden = false;
+}
+document.getElementById("confirm-no").onclick = () => { document.getElementById("confirm").hidden = true; pending = null; };
+document.getElementById("confirm-yes").onclick = () => { document.getElementById("confirm").hidden = true; if (pending) pending(); pending = null; };
+document.getElementById("copy").onclick = async () => {
+  saveNow();
+  const t = saveText();
+  textEl.value = t;
+  if (!t) { statusEl.textContent = "Pas encore de sauvegarde à copier : joue quelques secondes d'abord."; return; }
+  try { await navigator.clipboard.writeText(t); statusEl.textContent = "Sauvegarde copiée."; }
+  catch (e) { textEl.focus(); textEl.select(); statusEl.textContent = "Sauvegarde affichée ci-dessus : sélectionne-la et copie-la."; }
+};
+document.getElementById("load").onclick = () => {
+  let t = textEl.value.replace(/\r\n?/g, "\n").trim();
+  const at = t.indexOf("# Pet Sim");
+  if (at < 0 || !t.slice(at).startsWith(SAVE_HEADER)) {
+    statusEl.textContent = "Ce texte n'est pas une sauvegarde : il doit commencer par « # Pet Sim : sauvegarde (ne pas modifier) ».";
+    return;
+  }
+  t = t.slice(at) + "\n";
+  ask("Remplacer la partie de ce navigateur par celle collée ?", () => {
+    running = false;
+    const bytes = storageWithSave(t, wasm.web_storage_size());
+    start(bytes).then(() => { persist(true); statusEl.textContent = "Sauvegarde chargée : regarde l'écran titre (« Partie chargée »)."; });
+  });
+};
+document.getElementById("reset").onclick = () => ask("Effacer la partie de ce navigateur et recommencer ?", () => {
+  running = false;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  start(null).then(() => persist(true));
+});
+
+let saved = null;
+try { const s = localStorage.getItem(STORE_KEY); if (s) saved = fromB64(s); } catch (e) {}
+start(saved).catch(err => { statusEl.textContent = "Le jeu n'a pas pu démarrer : " + err.message; });
+canvas.focus({ preventScroll: true });
+</script>
