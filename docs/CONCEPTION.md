@@ -468,6 +468,6 @@ tester sur ta calculatrice.
    enchants, rangs/quêtes ; secrets plus tard.
 8. ~~Inventaire~~ : pets empilés (×N), sans limite ; recycler les doublons rend des coins (M2).
 9. ~~Diamonds~~ : rares (2 % des objets, index, récompenses de rang).
-10. ~~Sauvegarde~~ : faite (§8.2), à confirmer sur ta N0120.
+10. ~~Sauvegarde~~ : faite (§8.2), testée sur N0120 (Epsilon 26.4.0).
 11. **Langue** de l'interface : français avec noms de pets en anglais (comme PS99) ?
 12. ~~Ouverture multiple~~ : débloquée par amélioration (×2, ×3).
