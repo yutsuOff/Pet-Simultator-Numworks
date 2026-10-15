@@ -19,8 +19,11 @@ typedef struct {
   uint8_t palette_size;
   const uint16_t *palette;      /* RGB565 */
   const uint8_t *palette_alpha; /* 0..15 */
-  const uint8_t *pixels;        /* palette indices, row major */
+  const uint8_t *pixels;        /* palette indices, row major (DEFLATE data if packed) */
+  uint16_t packed;              /* size of the DEFLATE data, 0: raw pixels */
 } sprite_t;
+
+#define SPRITE_MAX_PACKED_PIXELS (48 * 48) /* largest packed sprite (pets, eggs, zone thumbnails) */
 
 typedef enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT } align_t;
 

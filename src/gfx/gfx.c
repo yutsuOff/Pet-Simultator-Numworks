@@ -1,4 +1,5 @@
 #include "gfx.h"
+#include "inflate.h"
 #include "../platform/platform.h"
 
 #define BAND_H 20
@@ -297,11 +298,42 @@ static color_t apply_effect(color_t c, int px, int py) {
   return gfx_mix(h, RGB(255, 255, 255), (lum - 128) * 160 / 127);
 }
 
+/* --- Packed sprites: decoded on use, the last few kept (least recently used goes) --- */
+
+#define CACHE_SIZE 12 /* a row of the Index (10 pets) stays decoded */
+static struct {
+  const sprite_t *sprite;
+  uint32_t used;
+  uint8_t pixels[SPRITE_MAX_PACKED_PIXELS];
+} cache[CACHE_SIZE];
+static uint32_t cache_clock;
+
+static const uint8_t *sprite_pixels(const sprite_t *s) {
+  if (!s->packed) return s->pixels;
+  int slot = 0;
+  for (int i = 0; i < CACHE_SIZE; i++) {
+    if (cache[i].sprite == s) {
+      cache[i].used = ++cache_clock;
+      return cache[i].pixels;
+    }
+    if (cache[i].used < cache[slot].used) slot = i;
+  }
+  int n = (int)s->width * s->height;
+  if (n > SPRITE_MAX_PACKED_PIXELS || inflate_raw(s->pixels, s->packed, cache[slot].pixels, (size_t)n) != n) {
+    for (int i = 0; i < n && i < SPRITE_MAX_PACKED_PIXELS; i++) cache[slot].pixels[i] = 0; /* transparent */
+  }
+  cache[slot].sprite = s;
+  cache[slot].used = ++cache_clock;
+  return cache[slot].pixels;
+}
+
 static void sprite_impl(const sprite_t *s, int x, int y, bool tint, color_t tc) {
   int y0 = y < band_y0 ? band_y0 : y;
   int y1 = y + s->height > band_y1 ? band_y1 : y + s->height;
+  if (y0 >= y1 || x >= SCREEN_W || x + s->width <= 0) return;
+  const uint8_t *pixels = sprite_pixels(s);
   for (int py = y0; py < y1; py++) {
-    const uint8_t *row = s->pixels + (py - y) * s->width;
+    const uint8_t *row = pixels + (py - y) * s->width;
     color_t *p = pixel(0, py);
     for (int i = 0; i < s->width; i++) {
       int px = x + i;
@@ -325,8 +357,10 @@ static void sprite_half_impl(const sprite_t *s, int x, int y, bool tint, color_t
   int w = s->width / 2, h = s->height / 2;
   int y0 = y < band_y0 ? band_y0 : y;
   int y1 = y + h > band_y1 ? band_y1 : y + h;
+  if (y0 >= y1 || x >= SCREEN_W || x + w <= 0) return;
+  const uint8_t *pixels = sprite_pixels(s);
   for (int py = y0; py < y1; py++) {
-    const uint8_t *r0 = s->pixels + (py - y) * 2 * s->width;
+    const uint8_t *r0 = pixels + (py - y) * 2 * s->width;
     const uint8_t *r1 = r0 + s->width;
     color_t *p = pixel(0, py);
     for (int i = 0; i < w; i++) {
@@ -360,8 +394,10 @@ void gfx_sprite_scaled(const sprite_t *s, int x, int y, int scale) {
   int h = s->height * scale;
   int y0 = y < band_y0 ? band_y0 : y;
   int y1 = y + h > band_y1 ? band_y1 : y + h;
+  if (y0 >= y1 || x >= SCREEN_W || x + s->width * scale <= 0) return;
+  const uint8_t *pixels = sprite_pixels(s);
   for (int py = y0; py < y1; py++) {
-    const uint8_t *row = s->pixels + (py - y) / scale * s->width;
+    const uint8_t *row = pixels + (py - y) / scale * s->width;
     color_t *p = pixel(0, py);
     for (int i = 0; i < s->width * scale; i++) {
       int px = x + i;

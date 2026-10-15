@@ -62,7 +62,8 @@ celle du navigateur.
 
 ## Installer sur la calculatrice
 
-Compatible N0110, N0115 et N0120 (pas N0100). Testé sur PC uniquement pour l'instant.
+Compatible N0110, N0115 et N0120 (pas N0100). Taille : 0,97 Mo (`.nwa`), 0,70 Mo une fois
+installée (images compressées sans perte, décodées à l'affichage).
 
 1. Récupère `petsim.nwa` (voir « Compiler » ci-dessous).
 2. Branche la calculatrice en USB, ouvre <https://my.numworks.com/apps> dans Chrome ou Edge.

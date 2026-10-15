@@ -212,20 +212,20 @@ def main():
          '#include "content.h"', ""]
     flash = 0
     for i, row in enumerate(pet_rows):
-        lines, size = sprite_c(f"pet_spr_{i}", fit(row[5], PET_SIZE), "static ")
+        lines, size = sprite_c(f"pet_spr_{i}", fit(row[5], PET_SIZE), "static ", packed=True)
         c += lines
         flash += size
     for kind, rows in (("potion", potions), ("enchant", enchants)):
         for i, r in enumerate(rows):
-            lines, size = sprite_c(f"{kind}_spr_{i}", fit("assets/" + r["image"], ITEM_SIZE), "static ")
+            lines, size = sprite_c(f"{kind}_spr_{i}", fit("assets/" + r["image"], ITEM_SIZE), "static ", packed=True)
             c += lines
             flash += size
     for i, e in enumerate(eggs):
-        lines, size = sprite_c(f"egg_spr_{i}", fit("assets/" + e["image"], EGG_SIZE), "static ")
+        lines, size = sprite_c(f"egg_spr_{i}", fit("assets/" + e["image"], EGG_SIZE), "static ", packed=True)
         c += lines
         flash += size
     for i, z in enumerate(zones):
-        lines, size = sprite_c(f"zone_spr_{i}", fill("assets/" + z["image"], THUMB_SIZE), "static ")
+        lines, size = sprite_c(f"zone_spr_{i}", fill("assets/" + z["image"], THUMB_SIZE), "static ", packed=True)
         c += lines
         flash += size
 

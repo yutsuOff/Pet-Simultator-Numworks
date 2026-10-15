@@ -283,8 +283,10 @@ aléatoires. Rebirth, Huge et Rangs ensuite.
   génère des fichiers C intégrés à l'app. **Le jeu sur la calculatrice ne dépend pas de Python.**
 - Tailles retenues : **48×48** pour les pets et les œufs (détail, éclosion en ×2), **24×24**
   calculé à l'affichage (moyenne 2×2, pas de double stockage), captures de zones en **64×36**.
-- Mesuré : 140 pets + 50 œufs + 37 zones = 564 Ko d'images ; l'app complète fait 811 Ko
-  (`.nwa`), dans les ~2,5 Mo disponibles.
+- Mesuré : 236 pets + 78 œufs + 65 zones + objets = 984 Ko d'images en 8 bits/pixel. Elles sont
+  **compressées sans perte** (DEFLATE, comme un PNG : 507 Ko) et décodées à l'affichage
+  (`src/gfx/inflate.c`, ~0,5 ms par image, les 12 dernières gardées en RAM). App installée :
+  0,70 Mo (`petsim.bin`), fichier `.nwa` 0,97 Mo (sans infos de débogage).
 - Rendu sans framebuffer plein écran : composition par **bandes** (ex. 320×20 px) en RAM puis
   envoi à l'écran → pas de scintillement, peu de RAM.
 - Tant que je n'ai pas tes images, j'utilise des **placeholders** clairement identifiés, remplacés

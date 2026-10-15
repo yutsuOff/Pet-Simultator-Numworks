@@ -14,6 +14,7 @@ Q ?= @
 BUILD_DIR = output
 NWLINK = npx --yes -- nwlink@1.0.0
 CC = arm-none-eabi-gcc
+STRIP = arm-none-eabi-strip
 HOST_CC ?= gcc
 
 COMMON_SRC = $(filter-out src/platform/%,$(wildcard src/*.c src/*/*.c))
@@ -38,6 +39,7 @@ build: $(BUILD_DIR)/petsim.nwa
 $(BUILD_DIR)/petsim.nwa: $(DEVICE_OBJ) $(BUILD_DIR)/device/icon.o
 	@echo "LD      $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $^ -lm -o $@
+	$(Q) $(STRIP) --strip-debug --strip-unneeded $@  # same app, smaller file (names and debug info)
 
 $(BUILD_DIR)/device/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -131,6 +133,8 @@ test:
 	$(Q) $(BUILD_DIR)/tests/test_eggs
 	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_save.c src/save/save.c src/save/storage.c $(GAME_SRC) -lm -o $(BUILD_DIR)/tests/test_save
 	$(Q) $(BUILD_DIR)/tests/test_save
+	$(Q) $(HOST_CC) $(HOST_CFLAGS) tests/test_sprites.c src/gfx/inflate.c src/generated/content.c -o $(BUILD_DIR)/tests/test_sprites
+	$(Q) $(BUILD_DIR)/tests/test_sprites
 
 # --- Balance simulator (a bot plays the whole game, see tests/balance_sim.c) ---
 

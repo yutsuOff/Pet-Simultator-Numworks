@@ -13,6 +13,7 @@ Usage: python3 tools/convert_images.py [assets/sprites.txt] [src/generated/sprit
 Produces sprites.c and sprites.h.
 """
 import sys
+import zlib
 from PIL import Image
 
 
@@ -52,9 +53,21 @@ def palettize(img, quantize=255 // 4):
     return [(0, 0)] + colors, pixels
 
 
-def sprite_c(name, img, storage=""):
-    """C source of one sprite. Returns (lines, bytes of flash)."""
+MAX_PACKED_PIXELS = 48 * 48  # SPRITE_MAX_PACKED_PIXELS in src/gfx/gfx.h
+
+
+def sprite_c(name, img, storage="", packed=False):
+    """C source of one sprite. Returns (lines, bytes of flash). A packed sprite keeps its
+    pixels as raw DEFLATE data (decoded by src/gfx/inflate.c when drawn)."""
     palette, pixels = palettize(img)
+    raw = len(pixels)
+    if packed:
+        if raw > MAX_PACKED_PIXELS:
+            sys.exit(f"{name}: too big to be packed")
+        z = zlib.compressobj(9, zlib.DEFLATED, -15, 9)
+        data = z.compress(bytes(pixels)) + z.flush()
+        assert zlib.decompress(data, -15) == bytes(pixels)
+        pixels = list(data)
     c = [f"static const uint16_t {name}_pal[{len(palette)}] = {{"
          + ",".join(f"0x{p[0]:04x}" for p in palette) + "};",
          f"static const uint8_t {name}_alpha[{len(palette)}] = {{"
@@ -64,7 +77,7 @@ def sprite_c(name, img, storage=""):
         c.append("  " + ",".join(str(v) for v in pixels[i:i + 32]) + ",")
     c.append("};")
     c.append(f"{storage}const sprite_t {name} = {{{img.width}, {img.height}, {len(palette)}, "
-             f"{name}_pal, {name}_alpha, {name}_px}};")
+             f"{name}_pal, {name}_alpha, {name}_px, {len(pixels) if packed else 0}}};")
     c.append("")
     return c, len(pixels) + len(palette) * 3
 
