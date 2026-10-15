@@ -17,7 +17,7 @@ FONTS = [
     ("font_medium", INTER + "Inter-Bold.otf", 13),
     ("font_big", INTER + "InterDisplay-ExtraBold.otf", 19),
 ]
-EXTRA = "éèêëàâäçùûüôöîïÉÈÊÀÂÇÔŒœ×·…★→"
+EXTRA = "éèêëàâäçùûüôöîïÉÈÊÀÂÇÔŒœ×·…★→←↑↓"
 CHARSET = sorted(set(chr(c) for c in range(32, 127)) | set(EXTRA), key=ord)
 
 

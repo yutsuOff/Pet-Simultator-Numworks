@@ -75,6 +75,10 @@ static void test_format(void) {
   game.discovered[2] = 2;
   game.team[0] = 17;
   game.team[1] = 0;
+  game.upgrade_level[UPG_TEAM] = 2;
+  game.team[6] = 17; /* slot 7 exists with 2 team upgrades */
+  game.upgrade_level[UPG_LUCK] = 4;
+  game.egg_rewarded[1] = 0x81;
   game_t saved = game;
   char text[SAVE_TEXT_CAPACITY];
   int len = save_encode(text);
@@ -97,9 +101,56 @@ static void test_format(void) {
   printf("test_save: save text %d characters\n", len);
 }
 
+/* A save written by v0.3 (format 1) must still load. */
+static uint32_t crc32_ref(const uint8_t *p, size_t n) {
+  uint32_t c = 0xFFFFFFFFu;
+  while (n--) {
+    c ^= *p++;
+    for (int k = 0; k < 8; k++) c = (c >> 1) ^ (0xEDB88320u & (0u - (c & 1)));
+  }
+  return ~c;
+}
+
+static void test_version1(void) {
+  uint8_t bin[600], *p = bin;
+  double coins = 5000, diamonds = 12;
+  uint32_t opened = 9;
+  *p++ = 'P', *p++ = 'S', *p++ = 1;
+  memcpy(p, &coins, 8), p += 8;
+  memcpy(p, &diamonds, 8), p += 8;
+  *p++ = 1, *p++ = 2;
+  memcpy(p, &opened, 4), p += 4;
+  uint8_t team[5] = {2, 2, NO_PET, NO_PET, NO_PET};
+  memcpy(p, team, 5), p += 5;
+  *p++ = 4; /* an older content with 4 pets */
+  *p++ = 0, *p++ = 0, *p++ = 3, *p++ = 1;
+  *p++ = 0x0C; /* pets 2 and 3 discovered */
+  uint32_t c = crc32_ref(bin, (size_t)(p - bin));
+  memcpy(p, &c, 4), p += 4;
+  static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  char text[SAVE_TEXT_CAPACITY] = "# Pet Sim : sauvegarde (ne pas modifier)\n#";
+  char *q = text + strlen(text);
+  int n = (int)(p - bin);
+  for (int i = 0; i < n; i += 3) {
+    uint32_t v = (uint32_t)bin[i] << 16 | (i + 1 < n ? bin[i + 1] << 8 : 0) | (i + 2 < n ? bin[i + 2] : 0);
+    *q++ = b64[v >> 18], *q++ = b64[(v >> 12) & 63];
+    *q++ = i + 1 < n ? b64[(v >> 6) & 63] : '=';
+    *q++ = i + 2 < n ? b64[v & 63] : '=';
+  }
+  *q = 0;
+  game_init();
+  bool too_new;
+  CHECK(save_decode(text, strlen(text), &too_new), "version 1 save not loaded");
+  CHECK(game.coins == 5000 && game.diamonds == 12 && game.zone == 1 && game.zones_unlocked == 2, "v1 values");
+  CHECK(game.owned[2] == 3 && game.owned[3] == 1 && game_discovered(2) && !game_discovered(0), "v1 pets");
+  CHECK(game.team[0] == 2 && game.team[1] == 2 && game.team[2] == NO_PET, "v1 team");
+  CHECK(game.upgrade_level[UPG_DAMAGE] == 0, "v1 upgrades");
+}
+
 int main(void) {
   test_storage();
   test_format();
+  test_version1();
   if (failures == 0) printf("test_save: OK\n");
   return failures != 0;
 }

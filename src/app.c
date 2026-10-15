@@ -7,7 +7,7 @@
 #include "screens/screens.h"
 #include "ui/ui.h"
 
-#define VERSION "v0.3 · M1 · sauvegarde"
+#define VERSION "v0.4 · M2"
 
 static const screen_t *const screens[] = {
   &screen_farm, &screen_pets, &screen_eggs, &screen_zones,
@@ -192,7 +192,8 @@ int app_main(void) {
   platform_init();
   game_init();
   save_init();
-  if (platform_debug_rich()) game.coins = 2e7;
+  game_claim_index_rewards(); /* eggs completed before the index rewards existed */
+  if (platform_debug_rich()) game.coins = 2e7, game.diamonds = 600;
   input_t in = {0};
   /* Ignore the keys still held from launching the app. */
   in.held = platform_keys();

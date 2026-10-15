@@ -45,7 +45,19 @@ static void draw(void) {
   buf[len] = 0;
   gfx_text_shadow(&font_medium, 10, CONTENT_Y + 5, "Index", COL_WHITE, COL_SHADOW);
   ui_pill(58, CONTENT_Y + 6, buf, COL_BAR, COL_WHITE);
-  gfx_progress_bar(130, CONTENT_Y + 8, 180, 8, found * 1000 / PET_COUNT, COL_GOLD, COL_HP_BACK);
+  /* milestones: every INDEX_STEP pets, +5 % coins */
+  int next = (found / INDEX_STEP + 1) * INDEX_STEP;
+  if (next > PET_COUNT) next = PET_COUNT;
+  int permille = found >= next ? 1000 : (found % INDEX_STEP) * 1000 / INDEX_STEP;
+  gfx_progress_bar(130, CONTENT_Y + 8, 90, 8, permille, COL_GOLD, COL_HP_BACK);
+  char bonus[24], *q = bonus;
+  for (const char *s = "Coins +"; *s;) *q++ = *s++;
+  numfmt(5 * (found / INDEX_STEP), q);
+  while (*q) q++;
+  *q++ = '%';
+  *q = 0;
+  int bw = gfx_text_width(&font_small, bonus) + 10;
+  ui_pill(314 - bw, CONTENT_Y + 5, bonus, COL_GOLD_DARK, COL_WHITE);
 
   for (int i = scroll * COLS; i < PET_COUNT && i < (scroll + ROWS) * COLS; i++) {
     int x = GRID_X + (i % COLS) * CELL, y = GRID_Y + (i / COLS - scroll) * CELL;
@@ -64,7 +76,20 @@ static void draw(void) {
   bool known = game_discovered(selected);
   int x = 14 + gfx_text(&font_medium, 14, y + 6, known ? p->name : "???", COL_TEXT) + 8;
   if (known) ui_pill(x, y + 7, ui_tier_name(p->tier), ui_tier_color(p->tier), COL_WHITE);
-  gfx_text_aligned(&font_small, 6, y + 8, 300, ALIGN_RIGHT, eggs[p->egg].name, COL_TEXT_DIM);
+  /* home egg and its completion (diamond reward) */
+  const egg_t *egg = &eggs[p->egg];
+  int have = 0;
+  for (int s = egg->first_slot; s < egg->first_slot + egg->slot_count; s++) have += game_discovered(egg_slots[s].pet);
+  char info[48], *q2 = info, num[8];
+  for (const char *s = egg->name; *s;) *q2++ = *s++;
+  *q2++ = ' ';
+  for (const char *s = numfmt(have, num); *s;) *q2++ = *s++;
+  *q2++ = '/';
+  for (const char *s = numfmt(egg->slot_count, num); *s;) *q2++ = *s++;
+  *q2 = 0;
+  bool complete = have == egg->slot_count;
+  int iw = gfx_text_aligned(&font_small, 6, y + 8, 300, ALIGN_RIGHT, info, complete ? COL_GREEN_DARK : COL_TEXT_DIM);
+  if (complete) gfx_text(&font_small, 306 - iw - 12, y + 8, "★", COL_GOLD_DARK);
 }
 
 const screen_t screen_index = {"Index", &spr_tab_index, enter, update, draw};

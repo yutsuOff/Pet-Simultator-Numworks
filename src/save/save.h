@@ -15,7 +15,7 @@
 #include "storage.h"
 
 #define SAVE_NAME "petsim.py"
-#define SAVE_VERSION 1
+#define SAVE_VERSION 2
 #define SAVE_TEXT_CAPACITY 1024 /* fixed record size, so it is always rewritten in place */
 
 typedef enum {

@@ -3,7 +3,7 @@
 Adaptation 2D de Pet Simulator, en application native C (EADK) pour calculatrice NumWorks (`.nwa`).
 Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION.md).
 
-## État : M1 en cours — contenu Pet Simulator 99 intégré
+## État : M2 — progression (améliorations, index, doublons)
 
 - **Contenu réel de PS99** (wiki fandom) : 50 œufs, les 37 zones qui les contiennent, 140 pets,
   avec leurs vraies images. Détails et sources : [data/README.md](data/README.md).
@@ -11,11 +11,16 @@ Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION
   l'attaquent tout seuls puis passent au suivant (AUTO).
 - **Œufs** : liste des œufs (zones débloquées + aperçu de la suivante), pets et chances exactes,
   pets non découverts en silhouette, animation d'ouverture selon la rareté.
-- **Pets** : inventaire (pets empilés ×N), détail, équipe de 5.
+- **Pets** : inventaire (pets empilés ×N), détail, équipe de 5 (jusqu'à 8), barre d'outils :
+  tri (puissance, rareté, nom, nombre), filtre (tous, équipés, doublons), « Meilleurs »,
+  « Recycler » (vend les doublons contre des coins, garde 1 exemplaire et les équipés).
+- **Améliorations** (diamants) : Pets (force, équipe), Farming (coup de poing, réapparition),
+  Œufs (chance, ouverture multiple ×2/×3), Richesse (coins, diamants).
 - **Zones** : les 37 zones avec leur capture, déblocage dans l'ordre, téléportation.
-- **Index** : les 140 pets, découverts en couleur, les autres en silhouette.
+- **Index** : les 140 pets, découverts en couleur, les autres en silhouette. Compléter un œuf
+  (tous ses pets découverts, ★) donne des diamants ; tous les 20 pets découverts : +5 % de coins.
 - **Sauvegarde automatique** dans le fichier `petsim.py` (visible dans l'app Python) : voir plus bas.
-- Pas encore : améliorations, quêtes.
+- Pas encore : quêtes et succès (M4).
 - Objets à casser, du moins au plus riche : pièce, tas de pièces, caisse, cadeau, coffre ;
   diamant, tas de diamants. Vraies images PS99 (`assets/art/`). Icônes des onglets : provisoires.
 
@@ -53,6 +58,8 @@ avec Home) dans un script **`petsim.py`**, visible dans l'app Python. L'écran t
 | Retour | fermer l'animation d'œuf, sinon revenir à Farm |
 | Écran titre : Toolbox | diagnostic de la sauvegarde |
 | Pets : OK / Effacer / Toolbox | équiper un exemplaire / en retirer un / équiper les meilleurs |
+| Pets : ↑ depuis la 1re ligne | barre d'outils (←/→ choisir, OK appliquer) |
+| Amélio. : ←/→, ↑/↓, OK | catégorie, amélioration, acheter le niveau suivant |
 | Œufs : OK (pendant l'animation) | passer l'animation, puis rouvrir le même œuf |
 | Œufs, Zones : ←/→ | défiler par page |
 | Home | quitter |

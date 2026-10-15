@@ -40,7 +40,10 @@ $(BUILD_DIR)/petsim.nwa: $(DEVICE_OBJ) $(BUILD_DIR)/device/icon.o
 $(BUILD_DIR)/device/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo "CC      $<"
-	$(Q) $(CC) $(CFLAGS) -c $< -o $@
+	$(Q) $(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+# recompile an object when a header it includes changes
+-include $(DEVICE_OBJ:.o=.d)
 
 $(BUILD_DIR)/device/icon.o: assets/icon.png
 	@mkdir -p $(dir $@)
@@ -78,7 +81,10 @@ HATCH_20 = $(foreach i,1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20,OK OK)
 SCREENS_RICH = OK 4 D OK D OK D OK D OK D OK D OK D OK D OK D D W2 SHOT:11_zones \
   3 $(HATCH_20) W60 SHOT:12_hatch_rich BACK U U U U $(HATCH_20) BACK U U U $(HATCH_20) BACK \
   W60 SHOT:13_eggs_list 2 TOOLBOX W2 SHOT:14_pets_rich 1 W90 SHOT:15_farm_rich \
-  6 R R R D SHOT:16_index
+  6 R R R D SHOT:16_index \
+  5 OK OK OK W60 SHOT:17_upgrades R R D OK OK W60 SHOT:18_upgrades_eggs \
+  3 OK W14 SHOT:19_hatch3_shake W80 SHOT:20_hatch3_reveal BACK \
+  2 U R R R OK W2 SHOT:21_recycle OK W2 SHOT:22_recycled L L OK W2 SHOT:23_pets_filter
 
 .PHONY: screens
 screens: $(BUILD_DIR)/petsim-host

@@ -76,7 +76,7 @@ static void check_game(void) {
   if (game_equip(pet)) FAIL("equipped a copy that is not owned");
   game.owned[pet] = 9;
   for (int i = 0; i < 4; i++) game_equip(pet);
-  if (game_team_size() != TEAM_SIZE || game_equip(pet)) FAIL("team size limit");
+  if (game_team_size() != BASE_TEAM || game_equip(pet)) FAIL("team size limit");
   game.coins = 1e30;
   for (int z = 1; z < ZONE_COUNT; z++) {
     if (!game_unlock_next_zone()) FAIL("zone %d not unlocked", z);
@@ -85,10 +85,63 @@ static void check_game(void) {
   if (!game_egg_available(EGG_COUNT - 1)) FAIL("last egg unavailable");
 }
 
+/* Luck: chances still sum to 1, rare slots grow, and the draw follows them. */
+static void check_luck(void) {
+  game_init();
+  game.upgrade_level[UPG_LUCK] = upgrades[UPG_LUCK].max_level;
+  for (int e = 0; e < EGG_COUNT; e++) {
+    double sum = 0;
+    for (int s = eggs[e].first_slot; s < eggs[e].first_slot + eggs[e].slot_count; s++) {
+      sum += egg_slot_chance(s);
+      double base = (double)egg_slots[s].weight / EGG_WEIGHT_TOTAL;
+      if (base < 0.2 && egg_slot_chance(s) <= base) FAIL("egg %s: luck does not help a rare pet", eggs[e].name);
+    }
+    if (fabs(sum - 1) > 1e-9) FAIL("egg %s: chances sum to %.12f with luck", eggs[e].name, sum);
+  }
+  check_draws(500000);
+  game_init();
+}
+
+static void check_progression(void) {
+  game_init();
+  game.diamonds = 1e9;
+  for (int id = 0; id < UPG_COUNT; id++) {
+    double last = 0;
+    while (game.upgrade_level[id] < upgrades[id].max_level) {
+      double c = upgrade_cost(id);
+      if (c <= last) FAIL("upgrade %s: cost does not grow", upgrades[id].name);
+      last = c;
+      if (!game_buy_upgrade(id)) FAIL("upgrade %s not bought", upgrades[id].name);
+    }
+    if (game_buy_upgrade(id)) FAIL("upgrade %s bought past its maximum", upgrades[id].name);
+  }
+  if (game_team_slots() != MAX_TEAM || game_hatch_count() != MAX_HATCH) FAIL("team / hatch upgrades");
+  if (game_respawn_ms() < 500) FAIL("respawn too short");
+  /* recycling keeps one copy and the equipped ones */
+  game.owned[0] = 5;
+  game.owned[1] = 1;
+  game_equip(0);
+  game_equip(0);
+  int n;
+  double before = game.coins, coins = game_recycle_all(&n);
+  if (n != 3 || game.owned[0] != 2 || game.owned[1] != 1) FAIL("recycle counts (%d)", n);
+  if (!(coins > 0) || game.coins != before + coins) FAIL("recycle coins");
+  /* index rewards: once per completed egg */
+  game_init();
+  for (int s = eggs[0].first_slot; s < eggs[0].first_slot + eggs[0].slot_count; s++) {
+    int p = egg_slots[s].pet;
+    game.discovered[p / 8] |= (uint8_t)(1 << (p % 8));
+  }
+  if (game_claim_index_rewards() != game_egg_reward(0)) FAIL("index reward of the first egg");
+  if (game_claim_index_rewards() != 0) FAIL("index reward given twice");
+}
+
 int main(void) {
   check_content();
   check_draws(2000000);
+  check_luck();
   check_game();
+  check_progression();
   if (failures == 0) printf("test_eggs: OK\n");
   return failures != 0;
 }

@@ -391,7 +391,7 @@ fichier `petsim.nwa` (ou `make run` avec nwlink).
 |---|---|---|
 | **M0** | Squelette : build `.nwa` + build PC, barre haute/onglets, navigation, police, thème | App qui démarre, navigation entre écrans vides |
 | **M1** | Boucle jouable : farm, œufs + animation, inventaire, équiper, zones, index *(fait, avec le contenu PS99)* ; sauvegarde + écran de test sauvegarde *(à faire)* | **Premier jeu jouable sur calculatrice** |
-| **M2** | Upgrades, Index, tri/filtres, gestion des doublons | Progression complète sur 3 zones |
+| **M2** | Améliorations, récompenses d'index, tri/filtres, recyclage des doublons *(fait, §10.1)* | Progression complète |
 | **M3** | Contenu complet : 50 œufs, 37 zones, 140 pets du wiki PS99 *(fait)* ; pièce, diamant et objets à casser *(fait)* ; icônes des onglets *(à faire)* | Contenu complet |
 | **M4** | Quêtes, succès, mécaniques choisies (§5) | Rejouabilité |
 | **M5** | Simulateur d'équilibrage, réglages, polish visuel, optimisation | Version 1.0 |
@@ -400,6 +400,25 @@ Chaque étape sera compilée ; je te dirai exactement ce qui a été testé sur 
 tester sur ta calculatrice.
 
 ---
+
+### 10.1 M2 : ce qui a été fait (équilibrage provisoire)
+
+| Amélioration (diamants) | Effet par niveau | Niveaux | Coût |
+|---|---|---|---|
+| Force des pets | +15 % de dégâts | 10 | 5, ×1,6 par niveau |
+| Équipe | +1 pet équipé (5 → 8) | 3 | 25, ×3 |
+| Coup de poing | +50 % sur le coup (OK) | 5 | 3, ×1,7 |
+| Réapparition | −0,4 s (3 s → 1 s) | 5 | 4, ×1,7 |
+| Chance | +10 % aux pets à moins de 20 % dans l'œuf, puis renormalisation (le % affiché reste exact) | 10 | 8, ×1,6 |
+| Ouverture multiple | 2 puis 3 œufs d'un coup | 2 | 30, ×4 |
+| Coins / Diamants | +10 % / +20 % des gains | 10 / 5 | 5, ×1,6 / 6, ×1,8 |
+
+- **Index** : compléter un œuf (tous ses pets découverts, ★ dans la liste) donne
+  10 + 2 × n° de l'œuf diamants, une seule fois ; paliers de 20 pets découverts : +5 % de coins chacun.
+- **Doublons** : « Recycler » vend les exemplaires en trop (on garde 1 exemplaire et les équipés)
+  pour 20 % du prix de l'œuf d'origine × (rang + 1) en coins, après confirmation.
+- **Sauvegarde** : format 2 (améliorations, récompenses d'index, équipe jusqu'à 8) ; les
+  sauvegardes du format 1 se chargent toujours (testé).
 
 ## 11. Questions ouvertes (récapitulatif)
 
@@ -412,9 +431,8 @@ tester sur ta calculatrice.
 5. **Pets sur les cibles** : tous les pets sur un même objet, ou répartis sur plusieurs objets ?
 6. **Durée** visée pour finir les 50 zones ?
 7. **Mécaniques** du §5 à retenir (et lesquelles pour la première version) ?
-8. **Inventaire** : pets empilés (×N) ou exemplaires individuels ? Taille de départ ? Supprimer un
-   pet rend-il quelque chose (coins/diamonds) ?
+8. ~~Inventaire~~ : pets empilés (×N), sans limite ; recycler les doublons rend des coins (M2).
 9. **Diamonds** : sources validées (objets rares, coffres, quêtes, succès, index) ?
 10. ~~Sauvegarde~~ : faite (§8.2), à confirmer sur ta N0120.
 11. **Langue** de l'interface : français avec noms de pets en anglais (comme PS99) ?
-12. **Ouverture multiple** : dès le début, ou débloquée par upgrade (×1 → ×3 → ×8) ?
+12. ~~Ouverture multiple~~ : débloquée par amélioration (×2, ×3).

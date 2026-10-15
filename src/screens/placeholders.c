@@ -11,8 +11,6 @@ typedef struct {
 } planned_t;
 
 static const planned_t planned[] = {
-  {"Améliorations", "Étape M2", {"Catégories : Pets, Farming, Œufs, Richesse", "Plusieurs niveaux par amélioration",
-   "Coûts progressifs en coins ou diamants", 0}},
   {"Quêtes", "Étape M4", {"Quêtes courtes renouvelées", "Succès à paliers (bronze → diamant)",
    "Récompenses en coins, diamants et bonus", 0}},
 };
@@ -45,5 +43,4 @@ static void draw(void) {
   static void draw_##var(void) { planned_index = idx; draw(); } \
   const screen_t var = {label, icon, enter_##var, update, draw_##var};
 
-PLACEHOLDER(screen_upgrades, 0, "Amélio.", &spr_tab_upgrades)
-PLACEHOLDER(screen_quests, 1, "Quêtes", &spr_tab_quests)
+PLACEHOLDER(screen_quests, 0, "Quêtes", &spr_tab_quests)

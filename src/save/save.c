@@ -5,17 +5,20 @@
 
 #define SAVE_PERIOD_MS 5000
 #define HEADER_TEXT "# Pet Sim : sauvegarde (ne pas modifier)\n#"
-#define MAX_BINARY 640
+#define MAX_BINARY 700
 /* worst case: every pet count on 3 varint bytes */
-_Static_assert(3 + 8 + 8 + 1 + 1 + 4 + TEAM_SIZE + 1 + 3 * PET_COUNT + (PET_COUNT + 7) / 8 + 4 <= MAX_BINARY,
-               "save too big");
+_Static_assert(3 + 8 + 8 + 1 + 1 + 4 + 1 + MAX_TEAM + 1 + 3 * PET_COUNT + (PET_COUNT + 7) / 8 + 1 + UPG_COUNT +
+               1 + (EGG_COUNT + 7) / 8 + 4 <= MAX_BINARY, "save too big");
 _Static_assert(sizeof(HEADER_TEXT) + (MAX_BINARY + 2) / 3 * 4 + 2 <= SAVE_TEXT_CAPACITY, "save text too big");
 
-/* --- Binary format, version 1 ---
- * 'P' 'S' version | coins f64 | diamonds f64 | zone u8 | zones_unlocked u8 |
- * eggs_opened u32 | team[5] u8 | pet_count u8 | owned[pet_count] varint |
- * discovered bitmap (pet_count bits) | CRC32 of all the previous bytes
- * Pets are identified by their index: new content only adds pets at the end. */
+/* --- Binary format ---
+ * 'P' 'S' version | coins f64 | diamonds f64 | zone u8 | zones_unlocked u8 | eggs_opened u32 |
+ * v1: team[5] u8              v2: team_count u8 | team[team_count] u8
+ * pet_count u8 | owned[pet_count] varint | discovered bitmap (pet_count bits) |
+ * v2: upgrade_count u8 | levels[upgrade_count] u8 | egg_count u8 | egg_rewarded bitmap |
+ * CRC32 of all the previous bytes.
+ * Pets, eggs and upgrades are identified by their index: new content is only added at
+ * the end, and counts are stored so an older save still loads. */
 
 static uint32_t crc32(const uint8_t *p, size_t n) {
   uint32_t c = 0xFFFFFFFFu;
@@ -41,7 +44,8 @@ static int encode_binary(uint8_t *out) {
   *p++ = game.zone;
   *p++ = game.zones_unlocked;
   p = put(p, &game.eggs_opened, 4);
-  p = put(p, game.team, TEAM_SIZE);
+  *p++ = MAX_TEAM;
+  p = put(p, game.team, MAX_TEAM);
   *p++ = PET_COUNT;
   for (int i = 0; i < PET_COUNT; i++) {
     unsigned v = game.owned[i];
@@ -51,9 +55,21 @@ static int encode_binary(uint8_t *out) {
     } while (v);
   }
   p = put(p, game.discovered, (PET_COUNT + 7) / 8);
+  *p++ = UPG_COUNT;
+  p = put(p, game.upgrade_level, UPG_COUNT);
+  *p++ = EGG_COUNT;
+  p = put(p, game.egg_rewarded, (EGG_COUNT + 7) / 8);
   uint32_t c = crc32(out, (size_t)(p - out));
   p = put(p, &c, 4);
   return (int)(p - out);
+}
+
+/* Reads `count` bits into dest (keeping at most `keep` of them). */
+static const uint8_t *get_bits(const uint8_t *p, int count, uint8_t *dest, int keep) {
+  for (int i = 0; i < count && i < keep; i++) {
+    if ((p[i / 8] >> (i % 8)) & 1) dest[i / 8] |= (uint8_t)(1 << (i % 8));
+  }
+  return p + (count + 7) / 8;
 }
 
 static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
@@ -62,19 +78,26 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
   uint32_t c;
   memcpy(&c, in + n - 4, 4);
   if (crc32(in, (size_t)n - 4) != c) return false;
-  if (in[2] > SAVE_VERSION) {
+  int version = in[2];
+  if (version > SAVE_VERSION) {
     *too_new = true;
     return false;
   }
   game_t g = {0};
+  for (int i = 0; i < MAX_TEAM; i++) g.team[i] = NO_PET;
   const uint8_t *p = in + 3, *end = in + n - 4;
-  if (end - p < 8 + 8 + 1 + 1 + 4 + TEAM_SIZE + 1) return false;
+#define NEED(k) do { if (end - p < (long)(k)) return false; } while (0)
+  NEED(8 + 8 + 1 + 1 + 4 + 1);
   memcpy(&g.coins, p, 8), p += 8;
   memcpy(&g.diamonds, p, 8), p += 8;
   g.zone = *p++;
   g.zones_unlocked = *p++;
   memcpy(&g.eggs_opened, p, 4), p += 4;
-  memcpy(g.team, p, TEAM_SIZE), p += TEAM_SIZE;
+  int team = version == 1 ? 5 : *p++;
+  NEED(team + 1);
+  for (int i = 0; i < team; i++, p++) {
+    if (i < MAX_TEAM) g.team[i] = *p;
+  }
   int count = *p++;
   for (int i = 0; i < count; i++) {
     unsigned v = 0;
@@ -85,18 +108,30 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
     }
     if (i < PET_COUNT) g.owned[i] = (uint16_t)(v > UINT16_MAX ? UINT16_MAX : v);
   }
-  int bitmap = (count + 7) / 8;
-  if (end - p != bitmap) return false;
-  for (int i = 0; i < count && i < PET_COUNT; i++) {
-    if ((p[i / 8] >> (i % 8)) & 1) g.discovered[i / 8] |= (uint8_t)(1 << (i % 8));
+  NEED((count + 7) / 8);
+  p = get_bits(p, count, g.discovered, PET_COUNT);
+  if (version >= 2) {
+    NEED(1);
+    int upgrades_saved = *p++;
+    NEED(upgrades_saved + 1);
+    for (int i = 0; i < upgrades_saved; i++, p++) {
+      if (i < UPG_COUNT) g.upgrade_level[i] = *p <= upgrades[i].max_level ? *p : upgrades[i].max_level;
+    }
+    int eggs_saved = *p++;
+    NEED((eggs_saved + 7) / 8);
+    p = get_bits(p, eggs_saved, g.egg_rewarded, EGG_COUNT);
   }
+  if (p != end) return false;
+#undef NEED
   /* sanity checks: a save from another content version must not crash the game */
   if (!(g.coins >= 0) || !(g.diamonds >= 0)) return false;
   if (g.zones_unlocked < 1 || g.zones_unlocked > ZONE_COUNT || g.zone >= g.zones_unlocked) return false;
   game = g;
-  for (int i = 0; i < TEAM_SIZE; i++) {
-    uint8_t pet = game.team[i];
-    game.team[i] = NO_PET;
+  uint8_t saved_team[MAX_TEAM];
+  memcpy(saved_team, game.team, MAX_TEAM);
+  for (int i = 0; i < MAX_TEAM; i++) game.team[i] = NO_PET;
+  for (int i = 0; i < game_team_slots(); i++) {
+    uint8_t pet = saved_team[i];
     if (pet < PET_COUNT && game_equipped_count(pet) < game.owned[pet]) game.team[i] = pet;
   }
   return true;

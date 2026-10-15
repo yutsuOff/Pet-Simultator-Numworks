@@ -13,7 +13,6 @@
 #define SLOTS (COLS * ROWS)
 #define CARD_W 70
 #define CARD_H 64
-#define RESPAWN_MS 3000
 #define POP_MS 700
 #define TAP_PILES 8 /* a hit without pets: 1/8 of a coin pile */
 
@@ -57,8 +56,8 @@ static double max_hp(const slot_t *s) { return types[s->type].hp * zones[game.zo
 
 static double reward(const slot_t *s) {
   const breakable_type_t *t = &types[s->type];
-  if (t->gives_diamonds) return t->reward * (1 + game.zone / 4);
-  return t->reward * zones[game.zone].pile_reward;
+  if (t->gives_diamonds) return t->reward * (1 + game.zone / 4) * game_diamond_bonus();
+  return t->reward * zones[game.zone].pile_reward * game_coin_bonus();
 }
 
 static void spawn(slot_t *s) {
@@ -105,7 +104,7 @@ static int hit(double damage, uint32_t now) {
   else game.coins += value;
   s->pop_value = value;
   s->pop_until = now + POP_MS;
-  s->respawn_at = now + RESPAWN_MS;
+  s->respawn_at = now + game_respawn_ms();
   target = next_alive(target);
   return SCREEN_REDRAW_ALL;
 }
@@ -127,7 +126,7 @@ static int update(const input_t *in, uint32_t now) {
   }
   if ((input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE)) && slots[selected].respawn_at == 0) {
     target = selected;
-    double tap = zones[game.zone].pile_hp / TAP_PILES + game_team_power() / 5;
+    double tap = (zones[game.zone].pile_hp / TAP_PILES + game_team_power() / 5) * game_tap_bonus();
     result |= SCREEN_REDRAW_CONTENT | hit(tap, now);
   }
   /* pets attack the target continuously */
@@ -201,8 +200,9 @@ static void draw(void) {
   int y = CONTENT_Y + 156;
   ui_panel(6, y, 308, 36);
   bool attacking = target >= 0;
-  for (int i = 0; i < TEAM_SIZE; i++) {
-    int px = 12 + i * 28;
+  int slots = game_team_slots();
+  for (int i = 0; i < slots; i++) {
+    int px = 12 + i * 27;
     gfx_round_rect(px, y + 5, 26, 26, 6, RGB(205, 215, 235));
     if (game.team[i] == NO_PET) continue;
     const pet_t *p = &pets[game.team[i]];
@@ -211,13 +211,14 @@ static void draw(void) {
   }
   char buf[24];
   double power = game_team_power();
+  int tx = 12 + slots * 27 + 6;
   if (power > 0) {
-    gfx_text(&font_small, 160, y + 4, "Dégâts/s", COL_TEXT_DIM);
-    gfx_text(&font_medium, 160, y + 17, numfmt(power, buf), COL_TEXT);
-    ui_pill(262, y + 11, "AUTO", COL_GREEN, COL_WHITE);
+    gfx_text(&font_small, tx, y + 4, "Dégâts/s", COL_TEXT_DIM);
+    gfx_text(&font_medium, tx, y + 17, numfmt(power, buf), COL_TEXT);
+    if (slots <= 6) ui_pill(262, y + 11, "AUTO", COL_GREEN, COL_WHITE);
   } else {
-    gfx_text(&font_small, 156, y + 4, "OK : frapper l'objet", COL_TEXT);
-    gfx_text(&font_small, 156, y + 18, "Ouvre un œuf (onglet 3) !", COL_TEXT_DIM);
+    gfx_text(&font_small, tx, y + 4, "OK : frapper l'objet", COL_TEXT);
+    gfx_text(&font_small, tx, y + 18, "Ouvre un œuf (onglet 3) !", COL_TEXT_DIM);
   }
 }
 
