@@ -10,8 +10,11 @@ spr_tab_zones    assets/ui/tab_zones.png
 spr_tab_upgrades assets/ui/tab_upgrades.png
 spr_tab_index    assets/ui/tab_index.png
 spr_tab_quests   assets/ui/tab_quests.png
-# Breakables (Farm)
-spr_brk_coins    assets/art/coin_pile.png   38x30
-spr_brk_crate    assets/art/crate.png       38x30
-spr_brk_chest    assets/art/chest.png       38x30
-spr_brk_gems     assets/art/diamond.png     38x30
+# Breakables (Farm), from the cheapest to the richest
+spr_brk_coin     assets/art/coin.png         38x30
+spr_brk_coins    assets/art/coin_pile.png    38x30
+spr_brk_crate    assets/art/crate.png        38x30
+spr_brk_gift     assets/art/gift.png         38x30
+spr_brk_chest    assets/art/chest.png        38x30
+spr_brk_gem      assets/art/diamond.png      38x30
+spr_brk_gems     assets/art/diamond_pile.png 38x30

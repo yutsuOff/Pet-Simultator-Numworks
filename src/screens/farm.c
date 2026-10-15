@@ -17,20 +17,25 @@
 #define POP_MS 700
 #define TAP_PILES 8 /* a hit without pets: 1/8 of a coin pile */
 
-/* HP and rewards are multiples of the zone's coin pile (zone_t.pile_hp, pile_reward). */
+/* HP and rewards are multiples of the zone's coin pile (zone_t.pile_hp, pile_reward).
+ * Coins < coin pile < crate < gift < chest;  diamond < diamond pile. */
 typedef struct {
   const sprite_t *sprite;
   double hp;
   double reward;
-  bool gives_diamonds; /* reward = diamonds, added to the zone number / 4 */
-  uint8_t weight;      /* spawn chance */
+  bool gives_diamonds; /* reward x (1 + zone / 4) diamonds */
+  uint8_t weight;      /* spawn chance in %, the weights sum to 100 */
 } breakable_type_t;
 
+#define PILE 1 /* the coin pile, reference of the zone balancing */
 static const breakable_type_t types[] = {
-  {&spr_brk_coins, 1.0, 1.0, false, 60},
-  {&spr_brk_crate, 2.5, 3.0, false, 20},
-  {&spr_brk_chest, 6.0, 8.0, false, 8},
-  {&spr_brk_gems, 2.0, 1.0, true, 12},
+  {&spr_brk_coin, 0.5, 0.5, false, 30},
+  {&spr_brk_coins, 1.0, 1.0, false, 28},
+  {&spr_brk_crate, 2.5, 3.0, false, 14},
+  {&spr_brk_gift, 4.0, 5.0, false, 8},
+  {&spr_brk_chest, 8.0, 12.0, false, 4},
+  {&spr_brk_gem, 1.5, 1.0, true, 12},
+  {&spr_brk_gems, 4.0, 4.0, true, 4},
 };
 #define TYPE_COUNT (int)(sizeof(types) / sizeof(types[0]))
 
@@ -52,7 +57,7 @@ static double max_hp(const slot_t *s) { return types[s->type].hp * zones[game.zo
 
 static double reward(const slot_t *s) {
   const breakable_type_t *t = &types[s->type];
-  if (t->gives_diamonds) return t->reward + game.zone / 4;
+  if (t->gives_diamonds) return t->reward * (1 + game.zone / 4);
   return t->reward * zones[game.zone].pile_reward;
 }
 
@@ -71,7 +76,7 @@ static void reset_zone(void) {
   }
   /* always start with plain coin piles in the first row */
   for (int i = 0; i < COLS; i++) {
-    slots[i].type = 0;
+    slots[i].type = PILE;
     slots[i].hp = max_hp(&slots[i]);
   }
   farm_zone = game.zone;

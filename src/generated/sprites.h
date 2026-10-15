@@ -13,9 +13,12 @@ extern const sprite_t spr_tab_zones;
 extern const sprite_t spr_tab_upgrades;
 extern const sprite_t spr_tab_index;
 extern const sprite_t spr_tab_quests;
+extern const sprite_t spr_brk_coin;
 extern const sprite_t spr_brk_coins;
 extern const sprite_t spr_brk_crate;
+extern const sprite_t spr_brk_gift;
 extern const sprite_t spr_brk_chest;
+extern const sprite_t spr_brk_gem;
 extern const sprite_t spr_brk_gems;
 
 #endif

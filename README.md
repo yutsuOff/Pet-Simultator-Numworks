@@ -16,8 +16,8 @@ Conception, maquettes et feuille de route : [docs/CONCEPTION.md](docs/CONCEPTION
 - **Index** : les 140 pets, découverts en couleur, les autres en silhouette.
 - **Sauvegarde automatique** dans le fichier `petsim.py` (visible dans l'app Python) : voir plus bas.
 - Pas encore : améliorations, quêtes.
-- Pièce, diamant et objets à casser (tas de pièces, caisse, coffre, diamant) : vraies images
-  PS99 (`assets/art/`). Icônes des onglets : encore provisoires.
+- Objets à casser, du moins au plus riche : pièce, tas de pièces, caisse, cadeau, coffre ;
+  diamant, tas de diamants. Vraies images PS99 (`assets/art/`). Icônes des onglets : provisoires.
 
 ## Installer sur la calculatrice
 
