@@ -21,6 +21,7 @@ extern const sprite_t spr_brk_gift;
 extern const sprite_t spr_brk_chest;
 extern const sprite_t spr_brk_gem;
 extern const sprite_t spr_brk_gems;
+extern const sprite_t spr_logo;
 extern const sprite_t spr_machine_gold;
 extern const sprite_t spr_machine_rainbow;
 

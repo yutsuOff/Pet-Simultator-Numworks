@@ -123,17 +123,10 @@ static int check_quests(uint32_t now) {
 
 static void draw_title(void) {
   gfx_vgradient(0, 0, 320, 240, RGB(70, 150, 255), RGB(130, 220, 140));
-  gfx_round_rect(30, 34, 260, 92, 18, gfx_mix(COL_OUTLINE, RGB(70, 150, 255), 60));
-  gfx_round_gradient(34, 38, 252, 84, 15, RGB(255, 225, 90), COL_GOLD_DARK);
-  int y = 50;
-  gfx_text_aligned(&font_big, 36, y + 2, 252, ALIGN_CENTER, "PET SIMULATOR", COL_SHADOW);
-  gfx_text_aligned(&font_big, 34, y, 252, ALIGN_CENTER, "PET SIMULATOR", COL_WHITE);
-  gfx_text_aligned(&font_medium, 35, y + 33, 252, ALIGN_CENTER, "NumWorks Edition", COL_SHADOW);
-  gfx_text_aligned(&font_medium, 34, y + 32, 252, ALIGN_CENTER, "NumWorks Edition", COL_WHITE);
-  /* the four pets of the Cracked Egg, around the first egg */
-  static const int starters[] = {0, 1, 2, 3};
-  for (int i = 0; i < 4; i++) gfx_sprite(pets[starters[i]].sprite, 22 + i * 58 + (i >= 2) * 52, 134);
-  gfx_sprite(eggs[0].sprite, 136, 130);
+  gfx_sprite(&spr_logo, (320 - spr_logo.width) / 2, 6);
+  /* two pets of the Cracked Egg on each side of the logo */
+  gfx_sprite(pets[0].sprite, 8, 120);
+  gfx_sprite(pets[3].sprite, 264, 120);
   if (blink_on) {
     gfx_text_aligned(&font_medium, 1, 187, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_SHADOW);
     gfx_text_aligned(&font_medium, 0, 186, 320, ALIGN_CENTER, "Appuie sur OK pour jouer", COL_WHITE);

@@ -19,6 +19,8 @@ spr_brk_gift     assets/art/gift.png         38x30
 spr_brk_chest    assets/art/chest.png        38x30
 spr_brk_gem      assets/art/diamond.png      38x30
 spr_brk_gems     assets/art/diamond_pile.png 38x30
+# Title screen logo (provided by the player)
+spr_logo            assets/art/logo.png            200x174
 # Machines (Farm of zones 7 and 14), PS99 wiki icons
 spr_machine_gold    assets/art/gold_machine.png    44x40
 spr_machine_rainbow assets/art/rainbow_machine.png 44x40
