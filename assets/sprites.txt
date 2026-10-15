@@ -24,3 +24,8 @@ spr_logo            assets/art/logo.png            200x174
 # Machines (Farm of zones 7 and 14), PS99 wiki icons
 spr_machine_gold    assets/art/gold_machine.png    44x40
 spr_machine_rainbow assets/art/rainbow_machine.png 44x40
+# Machines of zones 38 to 65 (provided by the player)
+spr_machine_potions  assets/art/potion_machine.png  44x40
+spr_machine_fuse     assets/art/fuse_machine.png    44x40
+spr_machine_enchants assets/art/enchant_machine.png 44x40
+spr_machine_daycare  assets/art/daycare.png         44x40

@@ -1,5 +1,6 @@
 /* ZONES screen: the areas of Pet Simulator 99, unlocked in order with coins.
- * OK teleports to an unlocked zone, or buys the next one. */
+ * OK teleports to an unlocked zone, or buys the next one. The rebirth card stands
+ * between zone 37 and zone 38: the zones after it need the rebirth. */
 #include "screens.h"
 #include "../game/game.h"
 #include "../game/numfmt.h"
@@ -15,12 +16,17 @@ static int selected, scroll;
 static char message[48];
 static bool confirm_rebirth;
 
-/* The last entry of the list is the rebirth (shown once zone 37 is reached). */
-static bool rebirth_shown(void) { return game.zones_unlocked == ZONE_COUNT || game.rebirths; }
-static int entries(void) { return ZONE_COUNT + rebirth_shown(); }
+/* List entries: zones 1-37, the rebirth, zones 38-65. */
+#define REBIRTH_ENTRY REBIRTH_ZONE
+static int entries(void) { return ZONE_COUNT + 1; }
+static int entry_zone(int e) { return e < REBIRTH_ENTRY ? e : e - 1; } /* not for REBIRTH_ENTRY */
+static int zone_entry(int z) { return z < REBIRTH_ZONE ? z : z + 1; }
+
+static const char *const machine_names[MACHINE_COUNT] = {"Machine Golden", "Machine Rainbow", "Machine à potions",
+                                                         "Machine de fusion", "Machine à enchants", "Daycare"};
 
 static void enter(void) {
-  selected = game.zone;
+  selected = zone_entry(game.zone);
   scroll = selected - 1;
   if (scroll > entries() - ROWS) scroll = entries() - ROWS;
   confirm_rebirth = false;
@@ -63,19 +69,23 @@ static int update(const input_t *in, uint32_t now) {
   }
   if (input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE)) {
     r |= SCREEN_REDRAW_ALL;
-    if (selected == ZONE_COUNT) {
+    int z = entry_zone(selected);
+    if (selected == REBIRTH_ENTRY) {
       if (game_can_rebirth()) confirm_rebirth = true;
-      else ui_message("Rebirth déjà fait (max 1 pour l'instant)", now);
-    } else if (selected < game.zones_unlocked) {
-      game.zone = (uint8_t)selected;
-      say("Bienvenue : ", zones[selected].name, now);
-    } else if (selected > game.zones_unlocked) {
+      else if (game.rebirths) ui_message("Rebirth déjà fait (max 1 pour l'instant)", now);
+      else ui_message("Débloque d'abord la zone 37", now);
+    } else if (z < game.zones_unlocked) {
+      game.zone = (uint8_t)z;
+      say("Bienvenue : ", zones[z].name, now);
+    } else if (game_zone_needs_rebirth(z)) {
+      ui_message("Il faut d'abord faire un rebirth", now);
+    } else if (z > game.zones_unlocked) {
       ui_message("Débloque d'abord les zones précédentes", now);
     } else if (game_unlock_next_zone()) {
-      say("Zone débloquée : ", zones[selected].name, now);
+      say("Zone débloquée : ", zones[z].name, now);
     } else {
       char need[24];
-      numfmt(zones[selected].cost - game.coins, need);
+      numfmt(zones[z].cost - game.coins, need);
       say("Il te manque des coins : ", need, now);
     }
   }
@@ -86,7 +96,7 @@ static int update(const input_t *in, uint32_t now) {
 
 static void draw_card(int z, int y) {
   const zone_t *zone = &zones[z];
-  bool sel = z == selected;
+  bool sel = zone_entry(z) == selected;
   bool unlocked = z < game.zones_unlocked;
   bool next = z == game.zones_unlocked;
   int x = 6, w = 300;
@@ -108,10 +118,10 @@ static void draw_card(int z, int y) {
     else gfx_sprite_half_tint(egg->sprite, ex, y + 17, RGB(120, 125, 145));
     ex += 24;
   }
-  const char *info = z == GOLDEN_MACHINE_ZONE ? "Machine Golden" : z == RAINBOW_MACHINE_ZONE ? "Machine Rainbow"
+  int machine = game_zone_machine(z);
+  const char *info = machine != NO_MACHINE ? machine_names[machine]
                      : zone->egg_count > 1 ? "2 œufs" : eggs[zone->first_egg].name;
-  gfx_text(&font_small, ex + 2, y + 23, info,
-           z == GOLDEN_MACHINE_ZONE || z == RAINBOW_MACHINE_ZONE ? COL_GOLD_DARK : COL_TEXT_DIM);
+  gfx_text(&font_small, ex + 2, y + 23, info, machine != NO_MACHINE ? COL_GOLD_DARK : COL_TEXT_DIM);
   /* status */
   int sx = x + w - 8;
   if (z == game.zone) {
@@ -120,6 +130,9 @@ static void draw_card(int z, int y) {
   } else if (unlocked) {
     sx -= gfx_text_width(&font_small, "Débloquée") + 10;
     ui_pill(sx, y + 14, "Débloquée", COL_BLUE, COL_WHITE);
+  } else if (game_zone_needs_rebirth(z)) {
+    sx -= gfx_text_width(&font_small, "Rebirth requis") + 10;
+    ui_pill(sx, y + 14, "Rebirth requis", COL_LOCKED, COL_WHITE);
   } else {
     char price[24];
     numfmt(zone->cost, price);
@@ -133,11 +146,13 @@ static void draw_card(int z, int y) {
 
 static void draw_rebirth_card(int y) {
   int x = 6, w = 300;
-  bool sel = selected == ZONE_COUNT, can = game_can_rebirth();
+  bool sel = selected == REBIRTH_ENTRY, can = game_can_rebirth();
   ui_card(x, y, w, CARD_H - 4, sel, can ? RGB(255, 235, 160) : RGB(215, 215, 225), can ? COL_GOLD : RGB(180, 180, 195));
   if (sel) y -= 2;
   gfx_text(&font_big, x + 12, y + 3, "Rebirth", COL_TEXT);
-  gfx_text(&font_small, x + 12, y + 25, can ? "+75 % de force, recommence à la zone 1" : "Fait ! Pets +75 % plus forts",
+  gfx_text(&font_small, x + 12, y + 25,
+           can ? "+75 % de force, ouvre les zones 38 à 65"
+           : game.rebirths ? "Fait ! Pets +75 %, zones 38 à 65 ouvertes" : "À la zone 37 : ouvre les zones 38 à 65",
            COL_TEXT_DIM);
   if (can) ui_pill(x + w - 70, y + 13, "OK", COL_GREEN_DARK, COL_WHITE);
 }
@@ -146,7 +161,7 @@ static void draw_confirm(void) {
   ui_panel(20, CONTENT_Y + 24, 280, 146);
   gfx_text_aligned(&font_big, 20, CONTENT_Y + 34, 280, ALIGN_CENTER, "Rebirth ?", COL_TEXT);
   static const char *const lines[] = {"Tu gardes : pets, objets, diamants,", "améliorations, index et rang.",
-                                      "Tu perds : coins et zones (retour zone 1).", "Gagné : pets +75 % plus forts."};
+                                      "Tu perds : coins et zones (retour zone 1).", "Gagné : pets +75 %, zones 38 à 65."};
   for (int i = 0; i < 4; i++) {
     gfx_text_aligned(&font_small, 20, CONTENT_Y + 64 + i * 16, 280, ALIGN_CENTER, lines[i], i == 3 ? COL_GREEN_DARK : COL_TEXT);
   }
@@ -156,8 +171,8 @@ static void draw_confirm(void) {
 static void draw(void) {
   int n = entries();
   for (int i = 0; i < ROWS && scroll + i < n; i++) {
-    if (scroll + i == ZONE_COUNT) draw_rebirth_card(LIST_Y + i * CARD_H);
-    else draw_card(scroll + i, LIST_Y + i * CARD_H);
+    if (scroll + i == REBIRTH_ENTRY) draw_rebirth_card(LIST_Y + i * CARD_H);
+    else draw_card(entry_zone(scroll + i), LIST_Y + i * CARD_H);
   }
   /* scroll indicator */
   int bar_h = ROWS * CARD_H - 6;

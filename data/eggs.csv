@@ -49,3 +49,31 @@ egg,name,area,cost_coins,cost_wiki,image
 48,Hyena Egg,35,20000000000000,20 Platinum Coins,eggs/hyena_egg.png
 49,Melted Egg,36,40000000000000,40 Platinum Coins,eggs/melted_egg.png
 50,Snow Egg,37,80000000000000,80 Platinum Coins,eggs/snow_egg.png
+51,Icicle Egg,38,150000000000000,150 Platinum Coins,eggs/icicle_egg.png
+52,Snowman Egg,39,350000000000000,350 Platinum Coins,eggs/snowman_egg.png
+53,Yeti Egg,40,750000000000000,750 Platinum Coins,eggs/yeti_egg.png
+54,Ice Egg,41,1500000000000000,1500 Platinum Coins,eggs/ice_egg.png
+55,Thawed Egg,42,3500000000000000,3500 Platinum Coins,eggs/thawed_egg.png
+56,Magma Egg,43,7000000000000000,7000 Platinum Coins,eggs/magma_egg.png
+57,Obsidian Egg,44,15000000000000000,15000 Platinum Coins,eggs/obsidian_egg.png
+58,Volcano Egg,45,30000000000000000,30000 Platinum Coins,eggs/volcano_egg.png
+59,Bone Egg,46,70000000000000000,70000 Platinum Coins,eggs/bone_egg.png
+60,Tentacle Egg,47,150000000000000000,150000 Platinum Coins,eggs/tentacle_egg.png
+61,Hell Egg,48,300000000000000000,300000 Platinum Coins,eggs/hell_egg.png
+62,Metal Egg,49,650000000000000000,650000 Platinum Coins,eggs/metal_egg.png
+63,Sakura Egg,50,1500000000000000000,1 Platinum Bars + 500000 Platinum Coins,eggs/sakura_egg.png
+64,Ninja Egg,51,3000000000000000000,3 Platinum Bars,eggs/ninja_egg.png
+65,Lantern Egg,52,6500000000000000000,6 Platinum Bars + 500000 Platinum Coins,eggs/lantern_egg.png
+66,Bonsai Egg,53,15000000000000000000,15 Platinum Bars,eggs/bonsai_egg.png
+67,Garden Egg,54,30000000000000000000,30 Platinum Bars,eggs/garden_egg.png
+68,Pixie Egg,55,70000000000000000000,70 Platinum Bars,eggs/pixie_egg.png
+69,Pedal Egg,56,150000000000000000000,150 Platinum Bars,eggs/pedal_egg.png
+70,Crowned Egg,57,350000000000000000000,350 Platinum Bars,eggs/crowned_egg.png
+71,Royal Egg,58,750000000000000000000,750 Platinum Bars,eggs/royal_egg.png
+72,Dandelion Egg,59,1500000000000000000000,1500 Platinum Bars,eggs/dandelion_egg.png
+73,Colorful Egg,60,3500000000000000000000,3500 Platinum Bars,eggs/colorful_egg.png
+74,Colorful Geode Egg,61,8000000000000000000000,8000 Platinum Bars,eggs/colorful_geode_egg.png
+75,Colorful Mosaic Egg,62,20000000000000000000000,20000 Platinum Bars,eggs/colorful_mosaic_egg.png
+76,Frosted Geode Egg,63,40000000000000000000000,40000 Platinum Bars,eggs/frosted_geode_egg.png
+77,Ice Sculpture Egg,64,85000000000000000000000,85000 Platinum Bars,eggs/ice_sculpture_egg.png
+78,Hot Cocoa Egg,65,200000000000000000000000,200000 Platinum Bars,eggs/hot_cocoa_egg.png

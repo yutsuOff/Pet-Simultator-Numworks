@@ -8,7 +8,7 @@
 #include "screens/screens.h"
 #include "ui/ui.h"
 
-#define VERSION "v0.5 · M4"
+#define VERSION "v0.6 · zones 38-65"
 
 static const screen_t *const screens[] = {
   &screen_farm, &screen_pets, &screen_eggs, &screen_zones,
@@ -281,6 +281,7 @@ int app_main(void) {
       int active = 0;
       for (int t = 0; t < POTION_TYPE_COUNT; t++) active += game.boost_tier[t] != 0;
       game_tick_boosts(elapsed > 1000 ? 1000 : elapsed);
+      game_tick_daycare(elapsed > 1000 ? 1000 : elapsed);
       for (int t = 0; t < POTION_TYPE_COUNT; t++) active -= game.boost_tier[t] != 0;
       if (active) redraw |= SCREEN_REDRAW_ALL; /* a potion ended */
       redraw |= check_quests(now);

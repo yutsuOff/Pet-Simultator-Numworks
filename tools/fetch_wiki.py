@@ -23,6 +23,7 @@ import os
 import re
 import sys
 import time
+from fractions import Fraction
 import urllib.parse
 import urllib.request
 
@@ -34,8 +35,8 @@ AREA_LIST = "Template:PS99SpawnWorldAreaList"
 UA = "PetSimNumWorks-fan-project/1.0 (data import script)"
 
 # Coin tiers of World 1 (wiki page "Currencies (Pet Simulator 99)").
-COIN_VALUE = {"": 1.0, "GoldBar": 1e6, "Platinum": 1e12, "PlatinumBar": 1e18, "Emerald": 1e24,
-              "EmeraldBar": 1e30, "Sapphire": 1e36}
+COIN_VALUE = {"": 1, "GoldBar": 10**6, "Platinum": 10**12, "PlatinumBar": 10**18, "Emerald": 10**24,
+              "EmeraldBar": 10**30, "Sapphire": 10**36}
 RARITIES = ["Basic", "Rare", "Epic", "Legendary", "Mythical", "Secret", "Exclusive", "Celestial"]
 
 
@@ -57,21 +58,21 @@ def wikitext(page):
 
 def parse_cost(text):
     """'1 {{Coin 99|GoldBar}} 500,000 {{Coin 99}}' -> (1500000.0, [(1, 'GoldBar'), (500000, '')])."""
-    total, parts = 0.0, []
+    total, parts = Fraction(0), []  # exact: prices above 2^53 coins print without float noise
     for amount, unit in re.findall(r"([\d.,]+[kKmM]?)\s*\{\{Coin 99(?:\|(\w+))?\}\}", text):
-        mult = 1.0
+        mult = 1
         if amount[-1] in "kK":
-            mult, amount = 1e3, amount[:-1]
+            mult, amount = 10**3, amount[:-1]
         elif amount[-1] in "mM":
-            mult, amount = 1e6, amount[:-1]
-        value = float(amount.replace(",", "")) * mult
+            mult, amount = 10**6, amount[:-1]
+        value = Fraction(amount.replace(",", "")) * mult
         if unit not in COIN_VALUE:
             sys.exit(f"unknown currency {unit!r} in {text!r}")
         total += value * COIN_VALUE[unit]
-        parts.append((value, unit))
+        parts.append((float(value), unit))
     if not parts:
         sys.exit(f"cannot read price {text!r}")
-    return total, parts
+    return int(total), parts
 
 
 def parse_eggs(text, count):
@@ -112,13 +113,13 @@ def parse_eggs(text, count):
 def parse_areas(text):
     areas = {}
     for row in re.split(r"\n\|-", text):
-        m = re.search(r"'''Area (\d+)'''<br>\(([^)]+)\)\s*\n\|([^\n]*)\n\|\s*\[\[File:([^|\]]+)", row)
+        m = re.search(r"'''Area (\d+)'''<br>\s*\(([^)]+)\)\s*\n\|([^\n]*)\n\|\s*\[\[File:([^|\]]+)", row)
         if not m:
             continue
         number, name, cost, image = m.groups()
         number = int(number)
         if "Unlocked by default" in cost:
-            total, parts = 0.0, []
+            total, parts = 0, []
         else:
             total, parts = parse_cost(cost)
         areas[number] = {"number": number, "name": name.strip(), "cost": total, "cost_parts": parts,
@@ -227,12 +228,12 @@ def main():
         for n in zone_numbers:
             a = areas[n]
             name = a["name"].replace("Chrystal", "Crystal")  # typo on the wiki area list
-            w.writerow([n, name, f"{a['cost']:.0f}", cost_text(a["cost_parts"]), f"zones/{slug(name)}.png"])
+            w.writerow([n, name, a["cost"], cost_text(a["cost_parts"]), f"zones/{slug(name)}.png"])
     with open("data/eggs.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["egg", "name", "area", "cost_coins", "cost_wiki", "image"])
         for e in eggs:
-            w.writerow([e["number"], e["name"], e["area"], f"{e['cost']:.0f}", cost_text(e["cost_parts"]),
+            w.writerow([e["number"], e["name"], e["area"], e["cost"], cost_text(e["cost_parts"]),
                         f"eggs/{slug(e['name'])}.png"])
     with open("data/egg_pets.csv", "w", newline="") as f:
         w = csv.writer(f)

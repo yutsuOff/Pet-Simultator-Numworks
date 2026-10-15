@@ -132,7 +132,7 @@ def main():
     zones, eggs, egg_pets, pets = read("zones"), read("eggs"), read("egg_pets"), read("pets")
     pet_index = {p["pet"]: i for i, p in enumerate(pets)}
     zone_index = {int(z["area"]): i for i, z in enumerate(zones)}
-    if len(pets) > 255 or len(eggs) > 255 or len(zones) > 255:
+    if len(pets) + len(read("huges")) > 255 or len(eggs) > 255 or len(zones) > 255:  # 255: NO_PET
         sys.exit("too many entries for uint8_t indices")
 
     # hatch slots

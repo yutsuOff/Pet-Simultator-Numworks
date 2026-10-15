@@ -35,18 +35,18 @@ def to_key(r, g, b, a):
     return (rgb565, a4)
 
 
-def palettize(img):
+def palettize(img, quantize=255 // 4):
     raw = img.tobytes()
     px = [tuple(raw[i:i + 4]) for i in range(0, len(raw), 4)]
     keys = [to_key(*p) for p in px]
     colors = sorted(set(k for k in keys if k))
     if len(colors) > 254:  # index 0 is transparent: at most 255 entries in all
-        # Too many colors: quantize the RGB part, keep the alpha channel.
+        # Too many colors: quantize the RGB part, keep the alpha channel (fewer colors if the
+        # alpha levels still make too many pairs).
         alpha = img.getchannel("A")
-        rgb = img.convert("RGB").quantize(colors=255 // 4, method=Image.Quantize.MEDIANCUT).convert("RGB")
-        img = rgb.copy()
-        img.putalpha(alpha)
-        return palettize(img)
+        rgb = img.convert("RGB").quantize(colors=quantize, method=Image.Quantize.MEDIANCUT).convert("RGB")
+        rgb.putalpha(alpha)
+        return palettize(rgb, quantize * 3 // 4)
     index = {c: i + 1 for i, c in enumerate(colors)}
     pixels = [index[k] if k else 0 for k in keys]
     return [(0, 0)] + colors, pixels

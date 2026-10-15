@@ -25,12 +25,21 @@ static inline bool variant_shiny(int v) { return v >= VAR_SHINY; }
  * random. Normal 50k, golden 75k, shiny 100k, rainbow 125k, golden shiny 150k, rainbow shiny 175k. */
 extern const uint32_t huge_odds[VARIANT_COUNT];
 
-/* Machines (PS99): 10 identical pets -> 1 of the next level. They stand in a zone. */
-#define MACHINE_INPUT 10
+/* Machines (PS99). Each one stands in the last Farm slot of its zone. */
+enum { MACHINE_GOLDEN, MACHINE_RAINBOW, MACHINE_POTIONS, MACHINE_FUSE, MACHINE_ENCHANTS, MACHINE_DAYCARE, MACHINE_COUNT };
+extern const uint8_t machine_zone[MACHINE_COUNT]; /* zone index */
+#define NO_MACHINE (-1)
+#define MACHINE_INPUT 10          /* golden / rainbow: 10 identical pets -> 1 of the next level */
 #define GOLDEN_MACHINE_ZONE 6     /* zone 7: Farm */
 #define RAINBOW_MACHINE_ZONE 13   /* zone 14: Mushroom Field */
+#define ITEM_UPGRADE_INPUT 3      /* PS99 upgrade machines: 3 of tier N -> 1 of tier N+1 */
+#define FUSE_MIN 3                /* PS99 Fuse Machine: 3 pets or more (up to FUSE_MAX here) */
+#define FUSE_MAX 12
+#define DAYCARE_SLOTS 5
+#define DAYCARE_MINUTES 10        /* of play time, like the potions */
 
-#define MAX_REBIRTH 1             /* zones above 37 (future) will need 1 rebirth */
+#define REBIRTH_ZONE 37           /* zones (1-based) up to 37 are open without rebirth */
+#define MAX_REBIRTH 1             /* zones 38 and above need 1 rebirth */
 #define MAX_ENCHANT_SLOTS 5
 #define QUEST_SLOTS 4             /* 1, 2, 3 and 4 star quests (PS99: 3 from rank 2, 4 from rank 5) */
 #define NO_QUEST 0xFFFF
@@ -85,6 +94,9 @@ typedef struct {
   uint16_t quest_goal[QUEST_SLOTS];          /* index in rank_goals, NO_QUEST if none */
   uint32_t quest_progress[QUEST_SLOTS];
   uint8_t rebirths;
+  /* daycare: enrolled pets leave the inventory until collected */
+  team_slot_t daycare[DAYCARE_SLOTS];        /* pet NO_PET if empty */
+  uint32_t daycare_ms[DAYCARE_SLOTS];        /* time left, 0 when ready */
 } game_t;
 
 extern game_t game;
@@ -120,6 +132,33 @@ int game_machine_available(int pet, int variant); /* copies that can go in a mac
 /* Turns MACHINE_INPUT copies of (pet, variant) into 1 of the next level. */
 bool game_machine_make(int pet, int variant);
 
+typedef struct {
+  uint8_t pet, variant;
+  bool is_new;
+} hatch_t;
+
+/* Machine standing in a zone, or NO_MACHINE. */
+int game_zone_machine(int zone);
+/* Potions / enchants machines: ITEM_UPGRADE_INPUT of a tier I or II item -> 1 of the next tier. */
+int game_enchant_free(int enchant); /* copies not equipped */
+bool game_upgrade_potion(int potion);
+bool game_upgrade_enchant(int enchant);
+/* Fuse machine: FUSE_MIN..FUSE_MAX pets (not equipped, no huge) -> 1 stronger pet. The result
+ * is one of the 3 strongest pets of the unlocked eggs whose power is at most FUSE_YIELD x the
+ * total power put in; golden / rainbow odds are the share of golden / rainbow pets put in. */
+double game_fuse_power(const team_slot_t *in, int n); /* power the result can reach */
+bool game_fuse(const team_slot_t *in, int n, hatch_t *out);
+/* Daycare: a pet (not equipped, no huge) stays DAYCARE_MINUTES, then gives coins,
+ * diamonds and sometimes an item, according to its power. */
+bool game_daycare_enroll(int pet, int variant);
+void game_tick_daycare(uint32_t elapsed_ms);
+typedef struct {
+  double coins, diamonds;
+  int item; /* potion, ITEM 100 + enchant, or -1 */
+} daycare_reward_t;
+double game_daycare_coins(int pet, int variant); /* expected coins (shown before enrolling) */
+bool game_daycare_collect(int slot, daycare_reward_t *out);
+
 /* --- Eggs --- */
 /* Hatch weight of a slot with luck: pets rarer than 20 % in the egg get +luck %,
  * then the egg is renormalized (the chances shown are exact). */
@@ -130,10 +169,6 @@ int egg_roll(int egg, uint32_t (*rand32)(void));
 bool game_egg_available(int egg);  /* its zone is unlocked */
 int game_best_egg(void);           /* the most expensive egg available */
 int game_hatch_count(void);        /* eggs opened at once (1 to MAX_HATCH) */
-typedef struct {
-  uint8_t pet, variant;
-  bool is_new;
-} hatch_t;
 /* Buys and opens one egg (huge 1/50,000, then variants). False if not affordable. */
 bool game_open_egg(int egg, hatch_t *out);
 
@@ -144,7 +179,8 @@ double game_egg_reward(int egg);   /* diamonds for completing an egg */
 double game_claim_index_rewards(void); /* rewards of newly completed eggs, returns the diamonds */
 
 /* --- Zones and rebirth --- */
-bool game_unlock_next_zone(void);  /* buys zone zones_unlocked if affordable */
+bool game_unlock_next_zone(void);  /* buys zone zones_unlocked if affordable (and rebirth done) */
+bool game_zone_needs_rebirth(int zone);
 bool game_can_rebirth(void);
 void game_rebirth(void);           /* coins and zones back to the start, +75 % pet strength */
 

@@ -438,16 +438,30 @@ tester sur ta calculatrice.
 - **Sauvegarde** format 3 (variantes, objets, rangs, quêtes, rebirth), anciens formats relus ;
   l'enregistrement grandit par pas de 512 octets si besoin (seulement s'il est le dernier).
 
+### 10.3 Zones 38 à 65 : ce qui a été fait
+
+- **Contenu** : œufs 51 à 78 et zones 38 à 65 du wiki (Icy Peaks → Snowman Town), 93 pets de plus.
+- **Rebirth obligatoire** pour passer la zone 37 ; il donne aussi coins ×10 (choix du jeu) pour que
+  les zones 1 à 37 se refassent vite (~25 min pour le bot).
+- **Machines** (icônes fournies) : améliore les potions (zone 38) et les enchants (zone 55), 3 → 1
+  du niveau suivant comme dans PS99 ; fusion (zone 50) : 3 à 12 pets → 1 pet plus fort ;
+  Daycare (zone 58) : 5 places, 10 min de jeu, récompenses selon la force du pet. Dans PS99 elles
+  sont en zones 13 à 28 ; elles sont ici réparties sur les nouvelles zones.
+- **Durée** : le bot fait les zones 1-37 en ~5 h 55, le rebirth + zones 1-37 en 24 min, puis les
+  zones 38-65 en ~3 h 35 (`make calibrate`, `data/balance.csv`).
+- **Sauvegarde** format 4 : places du Daycare ; nombre de Huges enregistré, car les nouveaux pets
+  passent avant les Huges dans la table (les sauvegardes 1 à 3 sont recalées, testé).
+
 ## 11. Questions ouvertes (récapitulatif)
 
 1. ~~Modèle~~ : N0120, Epsilon 26.4.0.
-2. ~~Contenu PS99~~ : fait (œufs 1 à 50 et leurs 37 zones, depuis le wiki).
+2. ~~Contenu PS99~~ : fait (œufs 1 à 78 et leurs 65 zones, depuis le wiki).
 3. **Images** : pets, œufs et zones viennent du wiki ; pièce, diamant et objets à casser fournis.
    Restent les icônes des onglets et l'icône de l'app.
 4. **Farming** : semi-idle (on choisit une cible, les pets attaquent seuls, mode AUTO) **ou** aussi
    une part active (OK = coup de pouce « tap ») ?
 5. **Pets sur les cibles** : tous les pets sur un même objet, ou répartis sur plusieurs objets ?
-6. ~~Durée~~ : environ 6 h pour les 37 zones.
+6. ~~Durée~~ : environ 6 h pour les 37 zones, ~4 h de plus pour les zones 38 à 65.
 7. ~~Mécaniques~~ : Golden/Rainbow (machines zones 7 et 14), Shiny, Huges, Rebirth, potions,
    enchants, rangs/quêtes ; secrets plus tard.
 8. ~~Inventaire~~ : pets empilés (×N), sans limite ; recycler les doublons rend des coins (M2).

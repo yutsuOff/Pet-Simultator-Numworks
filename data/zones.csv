@@ -36,3 +36,31 @@ area,name,cost_coins,cost_wiki,image
 35,Safari,2500000000000000,2500 Platinum Coins,zones/safari.png
 36,Mountains,6000000000000000,6000 Platinum Coins,zones/mountains.png
 37,Snow Village,15000000000000000,15000 Platinum Coins,zones/snow_village.png
+38,Icy Peaks,30000000000000000,30000 Platinum Coins,zones/icy_peaks.png
+39,Ice Rink,65000000000000000,65000 Platinum Coins,zones/ice_rink.png
+40,Ski Town,150000000000000000,150000 Platinum Coins,zones/ski_town.png
+41,Hot Springs,350000000000000000,350000 Platinum Coins,zones/hot_springs.png
+42,Fire and Ice,750000000000000000,750000 Platinum Coins,zones/fire_and_ice.png
+43,Volcano,1500000000000000000,1 Platinum Bars + 500000 Platinum Coins,zones/volcano.png
+44,Obsidian Cave,4000000000000000000,4 Platinum Bars,zones/obsidian_cave.png
+45,Lava Forest,8500000000000000000,8 Platinum Bars + 500000 Platinum Coins,zones/lava_forest.png
+46,Underworld,20000000000000000000,20 Platinum Bars,zones/underworld.png
+47,Underworld Bridge,45000000000000000000,45 Platinum Bars,zones/underworld_bridge.png
+48,Underworld Castle,100000000000000000000,100 Platinum Bars,zones/underworld_castle.png
+49,Metal Dojo,200000000000000000000,200 Platinum Bars,zones/metal_dojo.png
+50,Fire Dojo,500000000000000000000,500 Platinum Bars,zones/fire_dojo.png
+51,Samurai Village,1000000000000000000000,1000 Platinum Bars,zones/samurai_village.png
+52,Bamboo Forest,2500000000000000000000,2500 Platinum Bars,zones/bamboo_forest.png
+53,Zen Garden,5500000000000000000000,5500 Platinum Bars,zones/zen_garden.png
+54,Flower Field,15000000000000000000000,15000 Platinum Bars,zones/flower_field.png
+55,Fairytale Meadows,30000000000000000000000,30000 Platinum Bars,zones/fairytale_meadows.png
+56,Fairytale Castle,65000000000000000000000,65000 Platinum Bars,zones/fairytale_castle.png
+57,Royal Kingdom,150000000000000000000000,150000 Platinum Bars,zones/royal_kingdom.png
+58,Fairy Castle,350000000000000000000000,350000 Platinum Bars,zones/fairy_castle.png
+59,Cozy Village,750000000000000000000000,750000 Platinum Bars,zones/cozy_village.png
+60,Rainbow River,1500000000000000000000000,1 Emerald Coins + 500000 Platinum Bars,zones/rainbow_river.png
+61,Colorful Mines,3500000000000000000000000,3 Emerald Coins + 500000 Platinum Bars,zones/colorful_mines.png
+62,Colorful Mountains,8500000000000000000000000,8 Emerald Coins + 500000 Platinum Bars,zones/colorful_mountains.png
+63,Frost Mountains,20000000000000000000000000,20 Emerald Coins,zones/frost_mountains.png
+64,Ice Sculptures,40000000000000000000000000,40 Emerald Coins,zones/ice_sculptures.png
+65,Snowman Town,95000000000000000000000000,95 Emerald Coins,zones/snowman_town.png

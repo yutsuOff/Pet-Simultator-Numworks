@@ -33,7 +33,8 @@ typedef struct {
   double cost;
   uint8_t zone;
   uint8_t number; /* egg number in Pet Simulator 99 */
-  uint8_t first_slot, slot_count;
+  uint16_t first_slot;
+  uint8_t slot_count;
 } egg_t;
 
 typedef struct {

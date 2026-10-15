@@ -115,7 +115,12 @@ static void check_game(void) {
   for (int i = 0; i < 4; i++) game_equip(h.pet, h.variant);
   if (game_team_size() != BASE_TEAM || game_equip(h.pet, h.variant)) FAIL("team size limit");
   game.coins = 1e30;
-  for (int z = 1; z < ZONE_COUNT; z++) {
+  for (int z = 1; z < REBIRTH_ZONE; z++) {
+    if (!game_unlock_next_zone()) FAIL("zone %d not unlocked", z);
+  }
+  if (game_unlock_next_zone()) FAIL("zone %d unlocked without rebirth", REBIRTH_ZONE + 1);
+  game.rebirths = 1;
+  for (int z = REBIRTH_ZONE; z < ZONE_COUNT; z++) {
     if (!game_unlock_next_zone()) FAIL("zone %d not unlocked", z);
   }
   if (game_unlock_next_zone()) FAIL("unlocked past the last zone");
@@ -197,13 +202,14 @@ static void check_progression(void) {
   }
   if (game_claim_index_rewards() != game_egg_reward(0)) FAIL("index reward of the first egg");
   if (game_claim_index_rewards() != 0) FAIL("index reward given twice");
-  /* rebirth: only at the last zone, keeps the pets, +75 % strength */
+  /* rebirth: from zone 37, keeps the pets, +75 % strength */
   game_init();
   game.owned[0][0] = 3;
   double power = game_pet_power(0, 0);
-  if (game_can_rebirth()) FAIL("rebirth before the last zone");
-  game.zones_unlocked = ZONE_COUNT;
-  game.zone = ZONE_COUNT - 1;
+  game.zones_unlocked = REBIRTH_ZONE - 1;
+  if (game_can_rebirth()) FAIL("rebirth before zone %d", REBIRTH_ZONE);
+  game.zones_unlocked = REBIRTH_ZONE;
+  game.zone = REBIRTH_ZONE - 1;
   game_rebirth();
   if (game.zones_unlocked != 1 || game.zone != 0 || game.coins != START_COINS || game.owned[0][0] != 3) FAIL("rebirth reset");
   if (fabs(game_pet_power(0, 0) / power - 1.75) > 1e-9) FAIL("rebirth strength");
@@ -263,6 +269,64 @@ static void check_quests(void) {
   if (!(game.diamonds > 0)) FAIL("rank rewards");
 }
 
+/* Machines of zones 38-65: upgrade potions / enchants, fuse, daycare. */
+static void check_machines(void) {
+  game_init();
+  if (game_zone_machine(GOLDEN_MACHINE_ZONE) != MACHINE_GOLDEN || game_zone_machine(0) != NO_MACHINE) FAIL("machine zones");
+  for (int m = 0; m < MACHINE_COUNT; m++) {
+    if (machine_zone[m] >= ZONE_COUNT || game_zone_machine(machine_zone[m]) != m) FAIL("machine %d zone", m);
+  }
+  /* potions: 3 of tier I -> 1 of tier II, tier III cannot go further */
+  game_give_potion(0, 4);
+  if (!game_upgrade_potion(0) || game.potions_owned[0] != 1 || game.potions_owned[1] != 1) FAIL("upgrade potion");
+  if (game_upgrade_potion(0)) FAIL("upgrade potion with 1 copy");
+  game_give_potion(2, 3);
+  if (game_upgrade_potion(2)) FAIL("upgrade a tier III potion");
+  /* enchants: equipped copies stay */
+  game_give_enchant(0, 3);
+  game_equip_enchant(0);
+  if (game_enchant_free(0) != 2 || game_upgrade_enchant(0)) FAIL("upgrade an equipped enchant");
+  game_give_enchant(0, 1);
+  if (!game_upgrade_enchant(0) || game.enchants_owned[0] != 1 || game.enchants_owned[1] != 1) FAIL("upgrade enchant");
+  /* fuse: 3+ pets not equipped, result from an unlocked egg, never stronger than the limit */
+  game_init();
+  game.zones_unlocked = 10;
+  int strong = egg_slots[eggs[5].first_slot].pet;
+  game.owned[strong][VAR_NORMAL] = 3;
+  game.owned[strong][VAR_GOLDEN] = 3;
+  team_slot_t in[FUSE_MAX];
+  for (int i = 0; i < 3; i++) in[i] = (team_slot_t){(uint8_t)strong, VAR_NORMAL};
+  hatch_t h;
+  if (game_fuse(in, 2, &h)) FAIL("fuse with 2 pets");
+  game_equip(strong, VAR_NORMAL);
+  if (game_fuse(in, 3, &h)) FAIL("fuse with an equipped copy");
+  game_unequip(strong, VAR_NORMAL);
+  double limit = game_fuse_power(in, 3);
+  if (!game_fuse(in, 3, &h) || game.owned[strong][VAR_NORMAL] != 0) FAIL("fuse");
+  if (pets[h.pet].huge || pets[h.pet].power > limit || !game_egg_available(pets[h.pet].egg) || h.variant != VAR_NORMAL ||
+      game.owned[h.pet][h.variant] != 1 || !game_discovered(h.pet)) FAIL("fuse result");
+  if (pets[h.pet].power < pets[strong].power) FAIL("fuse result weaker than the pets put in");
+  for (int i = 0; i < 3; i++) in[i] = (team_slot_t){(uint8_t)strong, VAR_GOLDEN};
+  if (!game_fuse(in, 3, &h) || h.variant != VAR_GOLDEN) FAIL("fuse of golden pets");
+  in[0] = (team_slot_t){HUGE_FIRST, VAR_NORMAL};
+  game.owned[HUGE_FIRST][VAR_NORMAL] = 1;
+  if (game_fuse(in, 3, &h)) FAIL("fuse with a huge");
+  /* daycare: the pet leaves the inventory, comes back with rewards after DAYCARE_MINUTES */
+  game_init();
+  game.owned[3][VAR_NORMAL] = 2;
+  game_equip(3, VAR_NORMAL);
+  if (!game_daycare_enroll(3, VAR_NORMAL) || game.owned[3][VAR_NORMAL] != 1) FAIL("daycare enroll");
+  if (game_daycare_enroll(3, VAR_NORMAL)) FAIL("daycare took an equipped copy");
+  daycare_reward_t rw;
+  game_tick_daycare(DAYCARE_MINUTES * 60000u - 1);
+  if (game_daycare_collect(0, &rw)) FAIL("daycare collected too early");
+  game_tick_daycare(1);
+  double coins = game.coins;
+  if (!game_daycare_collect(0, &rw) || game.owned[3][VAR_NORMAL] != 2 || game.daycare[0].pet != NO_PET) FAIL("daycare collect");
+  if (!(rw.coins > 0) || rw.diamonds < 1 || game.coins != coins + rw.coins) FAIL("daycare reward");
+  if (game_daycare_enroll(HUGE_FIRST, VAR_NORMAL)) FAIL("huge in the daycare");
+}
+
 int main(void) {
   game_random = rand32;
   check_content();
@@ -273,6 +337,7 @@ int main(void) {
   check_progression();
   check_items();
   check_quests();
+  check_machines();
   if (failures == 0) printf("test_eggs: OK\n");
   return failures != 0;
 }

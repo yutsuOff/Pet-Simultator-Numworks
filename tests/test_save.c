@@ -91,6 +91,7 @@ static void test_format(void) {
   game.quest_goal[1] = 40;
   game.quest_progress[1] = 17;
   game.rebirths = 1;
+  game.daycare[1] = (team_slot_t){7, VAR_GOLDEN}, game.daycare_ms[1] = 12345;
   game_t saved = game;
   char text[SAVE_TEXT_CAPACITY];
   int len = save_encode(text);
@@ -162,10 +163,31 @@ static void test_version1(void) {
   CHECK(game.upgrade_level[UPG_DAMAGE] == 0, "v1 upgrades");
 }
 
+/* Version 3 save written by the game with 140 egg pets and 3 huges (before zones 38-65):
+ * Huge Dog (pet 141) shiny in the team, Golden pet 5 x2, pet 139 x4. The huges moved. */
+static void test_version3(void) {
+  static const char text[] = "# Pet Sim : sauvegarde (ne pas modifier)\n#"
+    "UFMDAAAAAABIiEAAAAAAAAAAAAIDAAAAAAiNAwUB/wD/AP8A/wD/AP8AjwYAHwIAogYEAA4BAAggAAAAAAAAAAAAAAAAAAAAACgIAAAAAAAAAAAy"
+    "AAAAAAAAAA8AAAAAAAAAAAAAAAAAAAASAAAAAAAAAAAAAAAAAAAAAAAABf//////BQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABP//AAAA"
+    "AP//AAAAAP//AAAAAP//AAAAAADslN5X\n";
+  game_init();
+  bool too_new;
+  CHECK(save_decode(text, strlen(text), &too_new), "version 3 save not loaded");
+  CHECK(game.coins == 777 && game.zones_unlocked == 3 && game.zone == 2, "v3 values");
+  int huge_dog = HUGE_FIRST + 1;
+  CHECK(game.owned[huge_dog][VAR_SHINY] == 1 && game_discovered(huge_dog) && game.owned[141][VAR_SHINY] == 0,
+        "v3 huge moved to %d", huge_dog);
+  CHECK(game.owned[5][VAR_GOLDEN] == 2 && game.owned[139][VAR_NORMAL] == 4 && game_discovered(139) && !game_discovered(140),
+        "v3 egg pets");
+  CHECK(game.team[0].pet == huge_dog && game.team[0].variant == VAR_SHINY && game.team[1].pet == 5, "v3 team");
+  CHECK(game.daycare[0].pet == NO_PET, "v3 daycare empty");
+}
+
 int main(void) {
   test_storage();
   test_format();
   test_version1();
+  test_version3();
   if (failures == 0) printf("test_save: OK\n");
   return failures != 0;
 }

@@ -5,26 +5,29 @@
 
 #define SAVE_PERIOD_MS 5000
 #define HEADER_TEXT "# Pet Sim : sauvegarde (ne pas modifier)\n#"
-#define MAX_BINARY 3000
+#define MAX_BINARY 6000
 /* worst case: every count on 3 varint bytes */
 _Static_assert(40 + 2 * MAX_TEAM + 3 * PET_COUNT * VARIANT_COUNT + (PET_COUNT + 7) / 8 + UPG_COUNT + EGG_COUNT / 8 +
-               3 * (POTION_COUNT + ENCHANT_COUNT) + MAX_ENCHANT_SLOTS + 5 * POTION_TYPE_COUNT + 6 * QUEST_SLOTS + 16 <=
+               3 * (POTION_COUNT + ENCHANT_COUNT) + MAX_ENCHANT_SLOTS + 5 * POTION_TYPE_COUNT + 6 * QUEST_SLOTS + 6 * DAYCARE_SLOTS + 20 <=
                MAX_BINARY, "save too big");
 _Static_assert(sizeof(HEADER_TEXT) + (MAX_BINARY + 2) / 3 * 4 + 2 <= SAVE_TEXT_CAPACITY, "save text too big");
 
 /* --- Binary format ---
  * 'P' 'S' version | coins f64 | diamonds f64 | zone u8 | zones_unlocked u8 | eggs_opened u32 |
  * v1: team[5] (pets)     v2: team_count | team pets     v3: team_count | team (pet, variant)
- * pet_count u8 | v3: variant_count u8 |
+ * pet_count u8 | v3: variant_count u8 | v4: huge_count u8 (huges are the last pets) |
  * owned: v1-2 varint per pet (normal); v3 per pet and variant, run-length: 0, run | n |
  * discovered bitmap (pet_count bits) |
  * v2+: upgrade_count | levels | egg_count | egg_rewarded bitmap |
  * v3: potion_count | potions varint | enchant_count | enchants varint | slot_count | slots |
  *     boost_count | (tier u8, ms u32) | rank | next_reward | star_bank u16 |
  *     quest_count | (goal u16, progress u32) | rebirths |
+ * v4: daycare_count | (pet, variant, ms u32) |
  * CRC32 of all the previous bytes.
  * Pets, eggs, upgrades and items are identified by their index: new content is only
- * added at the end, and counts are stored so an older save still loads. */
+ * added at the end, and counts are stored so an older save still loads. Huges come after
+ * the egg pets, so new egg pets move them: a pet index of an older save is remapped with
+ * its huge count (v3: 3 huges, v1-2: none). */
 
 static uint32_t crc32(const uint8_t *p, size_t n) {
   uint32_t c = 0xFFFFFFFFu;
@@ -62,6 +65,7 @@ static int encode_binary(uint8_t *out) {
   for (int i = 0; i < MAX_TEAM; i++) *p++ = game.team[i].pet, *p++ = game.team[i].variant;
   *p++ = PET_COUNT;
   *p++ = VARIANT_COUNT;
+  *p++ = HUGE_COUNT;
   const uint16_t *counts = &game.owned[0][0];
   for (int i = 0; i < PET_COUNT * VARIANT_COUNT;) {
     if (counts[i]) {
@@ -92,6 +96,11 @@ static int encode_binary(uint8_t *out) {
   *p++ = QUEST_SLOTS;
   for (int i = 0; i < QUEST_SLOTS; i++) p = put(p, &game.quest_goal[i], 2), p = put(p, &game.quest_progress[i], 4);
   *p++ = game.rebirths;
+  *p++ = DAYCARE_SLOTS;
+  for (int i = 0; i < DAYCARE_SLOTS; i++) {
+    *p++ = game.daycare[i].pet, *p++ = game.daycare[i].variant;
+    p = put(p, &game.daycare_ms[i], 4);
+  }
   uint32_t c = crc32(out, (size_t)(p - out));
   p = put(p, &c, 4);
   return (int)(p - out);
@@ -137,6 +146,15 @@ static uint32_t rd_varint(reader_t *r) {
   return 0;
 }
 
+/* Index of pet i of a save holding `saved` pets, the last `huges` of them huges; -1 if the
+ * game no longer has it. */
+static int map_pet(int i, int saved, int huges) {
+  int egg_pets = saved - huges;
+  if (i < egg_pets) return i < HUGE_FIRST ? i : -1;
+  i = HUGE_FIRST + (i - egg_pets);
+  return i < PET_COUNT ? i : -1;
+}
+
 static uint16_t clamp16(uint32_t v) { return (uint16_t)(v > UINT16_MAX ? UINT16_MAX : v); }
 
 static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
@@ -162,22 +180,31 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
   g.zones_unlocked = (uint8_t)rd_u8(&r);
   rd(&r, &g.eggs_opened, 4);
   int team = version == 1 ? 5 : (int)rd_u8(&r);
+  team_slot_t saved_team[MAX_TEAM];
+  for (int i = 0; i < MAX_TEAM; i++) saved_team[i].pet = NO_PET;
   for (int i = 0; i < team; i++) {
     uint8_t pet = (uint8_t)rd_u8(&r), variant = version >= 3 ? (uint8_t)rd_u8(&r) : 0;
-    if (i < MAX_TEAM) g.team[i] = (team_slot_t){pet, variant};
+    if (i < MAX_TEAM) saved_team[i] = (team_slot_t){pet, variant};
   }
   int pet_count = (int)rd_u8(&r);
+  int variants = version >= 3 ? (int)rd_u8(&r) : 1;
+  int huges = version >= 4 ? (int)rd_u8(&r) : version == 3 ? 3 : 0;
+  if (huges > pet_count) return false;
+  for (int i = 0; i < MAX_TEAM; i++) {
+    int pet = saved_team[i].pet == NO_PET ? -1 : map_pet(saved_team[i].pet, pet_count, huges);
+    if (pet >= 0) g.team[i] = (team_slot_t){(uint8_t)pet, saved_team[i].variant};
+  }
   if (version < 3) {
     for (int i = 0; i < pet_count; i++) {
       uint32_t v = rd_varint(&r);
       if (i < PET_COUNT) g.owned[i][VAR_NORMAL] = clamp16(v);
     }
   } else {
-    int variants = (int)rd_u8(&r);
     for (int i = 0; i < pet_count * variants && !r.bad;) {
       uint32_t v = rd_varint(&r);
       if (v) {
-        if (i / variants < PET_COUNT && i % variants < VARIANT_COUNT) g.owned[i / variants][i % variants] = clamp16(v);
+        int pet = map_pet(i / variants, pet_count, huges);
+        if (pet >= 0 && i % variants < VARIANT_COUNT) g.owned[pet][i % variants] = clamp16(v);
         i++;
       } else {
         uint32_t run = rd_varint(&r);
@@ -187,7 +214,11 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
     }
   }
   if (r.end - r.p < (pet_count + 7) / 8) return false;
-  r.p = get_bits(r.p, pet_count, g.discovered, PET_COUNT);
+  for (int i = 0; i < pet_count; i++) {
+    int pet = map_pet(i, pet_count, huges);
+    if (pet >= 0 && ((r.p[i / 8] >> (i % 8)) & 1)) g.discovered[pet / 8] |= (uint8_t)(1 << (pet % 8));
+  }
+  r.p += (pet_count + 7) / 8;
   if (version >= 2) {
     int k = (int)rd_u8(&r);
     for (int i = 0; i < k; i++) {
@@ -233,6 +264,19 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
     }
     g.rebirths = (uint8_t)rd_u8(&r);
   }
+  for (int i = 0; i < DAYCARE_SLOTS; i++) g.daycare[i].pet = NO_PET;
+  if (version >= 4) {
+    int k = (int)rd_u8(&r);
+    for (int i = 0; i < k; i++) {
+      uint32_t pet = rd_u8(&r), variant = rd_u8(&r), ms;
+      rd(&r, &ms, 4);
+      int mapped = pet == NO_PET ? -1 : map_pet((int)pet, pet_count, huges);
+      if (i < DAYCARE_SLOTS && mapped >= 0 && variant < VARIANT_COUNT) {
+        g.daycare[i] = (team_slot_t){(uint8_t)mapped, (uint8_t)variant};
+        g.daycare_ms[i] = ms > DAYCARE_MINUTES * 60000u ? DAYCARE_MINUTES * 60000u : ms;
+      }
+    }
+  }
   if (r.bad || r.p != r.end) return false;
   /* sanity checks: a save from another content version must not crash the game */
   if (!(g.coins >= 0) || !(g.diamonds >= 0)) return false;
@@ -241,7 +285,6 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
   if (g.next_reward > ranks[g.rank].reward_count) g.next_reward = ranks[g.rank].reward_count;
   if (g.rebirths > MAX_REBIRTH) g.rebirths = MAX_REBIRTH;
   game = g;
-  team_slot_t saved_team[MAX_TEAM];
   memcpy(saved_team, game.team, sizeof(saved_team));
   for (int i = 0; i < MAX_TEAM; i++) game.team[i].pet = NO_PET;
   for (int i = 0; i < game_team_slots(); i++) {
@@ -263,10 +306,11 @@ static bool decode_binary(const uint8_t *in, int n, bool *too_new) {
 
 /* --- Text (base64) --- */
 
+static uint8_t bin[MAX_BINARY]; /* large: not on the stack (shared by encode and decode) */
+
 static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 int save_encode(char *text) {
-  uint8_t bin[MAX_BINARY];
   int n = encode_binary(bin);
   char *q = text;
   for (const char *h = HEADER_TEXT; *h;) *q++ = *h++;
@@ -291,7 +335,6 @@ bool save_decode(const char *text, size_t size, bool *too_new) {
   *too_new = false;
   size_t hl = strlen(HEADER_TEXT);
   if (size < hl || memcmp(text, HEADER_TEXT, hl) != 0) return false;
-  uint8_t bin[MAX_BINARY];
   int n = 0;
   uint32_t acc = 0;
   int bits = 0;
@@ -330,7 +373,7 @@ save_status_t save_init(void) {
   size_t size;
   const uint8_t *value = storage_find(&storage, SAVE_NAME, &size);
   if (!value) return status = SAVE_NEW_GAME;
-  bool too_new;
+  bool too_new = false;
   if (size > 1 && save_decode((const char *)value + 1, size - 1, &too_new)) return status = SAVE_LOADED;
   return status = too_new ? SAVE_TOO_NEW : SAVE_UNREADABLE;
 }

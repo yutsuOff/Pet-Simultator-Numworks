@@ -5,10 +5,10 @@ Contenu repris de **Pet Simulator 99**, récupéré le 14/10/2026 sur le
 
 | Fichier | Contenu | Source sur le wiki |
 |---|---|---|
-| `zones.csv` | les zones (« Areas ») 1 à 37 du Spawn World, prix de déblocage | `Template:PS99SpawnWorldAreaList` |
-| `eggs.csv` | les œufs 1 à 50, leur zone et leur prix | `Template:PS99World1EggsList` |
+| `zones.csv` | les zones (« Areas ») 1 à 65 du Spawn World, prix de déblocage | `Template:PS99SpawnWorldAreaList` |
+| `eggs.csv` | les œufs 1 à 78, leur zone et leur prix | `Template:PS99World1EggsList` |
 | `egg_pets.csv` | les pets de chaque œuf et leur chance (%) | `Template:PS99World1EggsList` |
-| `pets.csv` | les 140 pets de ces œufs et leur rareté PS99 | page de chaque pet (infobox `Pet99`) |
+| `pets.csv` | les 233 pets de ces œufs et leur rareté PS99 | page de chaque pet (infobox `Pet99`) |
 | `huges.csv` | Huge Cat, Huge Dog, Huge Axolotl (images fournies) | pages Huge … (rareté Exclusive) |
 | `potions.csv`, `enchants.csv` | niveaux I à III : effet (%) et durée | pages Potions et Enchants |
 | `ranks.csv`, `rank_rewards.csv`, `rank_goals.csv` | rangs 1 à 12, récompenses, quêtes | modèles `RankNinfo` |
@@ -17,11 +17,13 @@ Contenu repris de **Pet Simulator 99**, récupéré le 14/10/2026 sur le
 Les images correspondantes sont dans `assets/pets/`, `assets/eggs/` (réduites à 96 px) et
 `assets/zones/` (captures des zones, réduites à 128 px de large).
 
-## Pourquoi 37 zones pour 50 œufs ?
+## Pourquoi 65 zones pour 78 œufs ?
 
-Les œufs 1 à 50 se trouvent dans les zones 1 à 37 (certaines zones ont 2 œufs) ; chaque zone
-importée a donc au moins un œuf. Pour aller plus loin : `python3 tools/fetch_wiki.py --eggs 62`
-(par exemple) importe les œufs suivants et les zones qui les contiennent, puis `make assets`.
+Les œufs 1 à 50 se trouvent dans les zones 1 à 37 (certaines zones ont 2 œufs), les œufs 51 à 78
+dans les zones 38 à 65 (un par zone) ; chaque zone importée a donc au moins un œuf. Pour aller plus
+loin : `python3 tools/fetch_wiki.py --eggs 90` (par exemple) importe les œufs suivants et les zones
+qui les contiennent, puis `make assets`. Les nouveaux pets s'ajoutent à la fin de `pets.csv`
+(les numéros des pets existants ne changent pas, la sauvegarde en dépend).
 
 ## Fidélité au wiki
 
@@ -63,6 +65,14 @@ importée a donc au moins un œuf. Pour aller plus loin : `python3 tools/fetch_w
 - Puissance : Golden +13 %, Rainbow +27 % (pages Gold / Rainbow Machine), Shiny ×1,5 (non
   publié par BIG Games), Huge = 200 % (golden 225, shiny 250, rainbow 275, golden shiny 300,
   rainbow shiny 325 %) de ton meilleur autre pet, chances 1/50 000 à 1/175 000 selon la variante, Rebirth +75 % (Rebirth 1).
+
+## Machines des zones 38 à 65 (règles du jeu)
+
+- Améliore les potions / les enchants : 3 → 1 du niveau suivant (valeurs du wiki, pages Upgrade
+  Potions / Upgrade Enchants Machine) ; placées en zones 38 et 55 (PS99 : 13 et 16).
+- Fusion (PS99 : zone 28, ici 50) et Daycare (PS99 : zone 20, ici 58) : principe du wiki, valeurs du
+  jeu (`src/game/machines.c`).
+- Rebirth : +75 % de force (Rebirth 1 de PS99) et coins ×10 (choix du jeu).
 
 Les images et les noms appartiennent à BIG Games ; textes du wiki sous licence CC BY-SA.
 Projet de fan non officiel et non commercial.

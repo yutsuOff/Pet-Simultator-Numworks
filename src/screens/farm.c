@@ -1,7 +1,7 @@
 /* FARM screen: the breakables of the current zone. OK targets the selected object
  * (and gives it a hit); the equipped pets then attack the target on their own and
- * move to the next object when it breaks (AUTO). Zones 7 and 14 hold a machine
- * (golden / rainbow) in their last slot. */
+ * move to the next object when it breaks (AUTO). Some zones hold a machine in their
+ * last slot (machines.c). */
 #include "screens.h"
 #include "../game/breakables.h"
 #include "../game/game.h"
@@ -37,35 +37,9 @@ static uint32_t clock_ms, last_tick;
 static int farm_zone = -1;
 static char drop_text[48];
 
-/* --- Machine (zones 7 and 14) --- */
+static int zone_machine(void) { return game_zone_machine(game.zone); }
 
-#define M_COLS 6
-#define M_ROWS 3
-static bool machine_open;
-static int machine_sel, machine_scroll;
-static uint16_t machine_list[PET_COUNT * 2]; /* pet | input variant << 8 */
-static int machine_count;
-static char machine_text[48];
-
-static int machine_kind(void) { /* input level of the machine of this zone, or -1 */
-  if (game.zone == GOLDEN_MACHINE_ZONE) return VAR_NORMAL;
-  if (game.zone == RAINBOW_MACHINE_ZONE) return VAR_GOLDEN;
-  return -1;
-}
-
-static bool is_machine(int slot) { return slot == MACHINE_SLOT && machine_kind() >= 0; }
-
-static void machine_build(void) {
-  machine_count = 0;
-  int level = machine_kind();
-  for (int shiny = 0; shiny < 2; shiny++) {
-    for (int p = 0; p < PET_COUNT; p++) {
-      int v = level + shiny * VAR_SHINY;
-      if (game.owned[p][v] && !pets[p].huge) machine_list[machine_count++] = (uint16_t)(p | v << 8);
-    }
-  }
-  if (machine_sel >= machine_count) machine_sel = machine_count ? machine_count - 1 : 0;
-}
+static bool is_machine(int slot) { return slot == MACHINE_SLOT && zone_machine() != NO_MACHINE; }
 
 /* --- Breakables --- */
 
@@ -89,7 +63,7 @@ static void reset_zone(void) {
   }
   farm_zone = game.zone;
   target = -1;
-  machine_open = false;
+  machine_close();
 }
 
 static void enter(void) {
@@ -126,37 +100,6 @@ static int hit(double damage, uint32_t now) {
   return SCREEN_REDRAW_ALL;
 }
 
-static int update_machine(const input_t *in, uint32_t now) {
-  int r = (now / 120 != (now - 33) / 120) ? SCREEN_REDRAW_CONTENT : 0; /* sparkles */
-  if (input_pressed(in, KEY_BACK)) {
-    machine_open = false;
-    return SCREEN_REDRAW_CONTENT | SCREEN_USED_BACK;
-  }
-  if (input_pressed(in, KEY_LEFT) && machine_sel > 0) machine_sel--, r |= SCREEN_REDRAW_CONTENT;
-  if (input_pressed(in, KEY_RIGHT) && machine_sel < machine_count - 1) machine_sel++, r |= SCREEN_REDRAW_CONTENT;
-  if (input_pressed(in, KEY_UP) && machine_sel >= M_COLS) machine_sel -= M_COLS, r |= SCREEN_REDRAW_CONTENT;
-  if (input_pressed(in, KEY_DOWN) && machine_sel + M_COLS < machine_count) machine_sel += M_COLS, r |= SCREEN_REDRAW_CONTENT;
-  if (machine_count && (input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE))) {
-    int p = machine_list[machine_sel] & 0xFF, v = machine_list[machine_sel] >> 8;
-    if (game_machine_make(p, v)) {
-      char name[40], *q = machine_text;
-      ui_pet_name(p, v + 1, name);
-      for (const char *t = name; *t;) *q++ = *t++;
-      for (const char *t = " fabriqué !"; *t;) *q++ = *t++;
-      *q = 0;
-      ui_message(machine_text, now);
-      machine_build();
-    } else {
-      ui_message("Il faut 10 exemplaires (non équipés)", now);
-    }
-    r |= SCREEN_REDRAW_CONTENT;
-  }
-  int row = machine_sel / M_COLS;
-  if (row < machine_scroll) machine_scroll = row;
-  if (row >= machine_scroll + M_ROWS) machine_scroll = row - M_ROWS + 1;
-  return r;
-}
-
 static int update(const input_t *in, uint32_t now) {
   int result = 0;
   if (farm_zone != game.zone) reset_zone();
@@ -165,8 +108,9 @@ static int update(const input_t *in, uint32_t now) {
   last_tick = now;
   clock_ms = now;
   static const input_t no_keys;
-  if (machine_open) {
-    result |= update_machine(in, now);
+  bool in_machine = machine_is_open();
+  if (in_machine) {
+    result |= machine_update(in, now);
     in = &no_keys; /* the pets keep farming behind the machine */
   }
   int col = selected % COLS, row = selected / COLS;
@@ -179,9 +123,7 @@ static int update(const input_t *in, uint32_t now) {
   }
   if (input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE)) {
     if (is_machine(selected)) {
-      machine_open = true;
-      machine_sel = machine_scroll = 0;
-      machine_build();
+      machine_open(zone_machine());
       result |= SCREEN_REDRAW_CONTENT;
     } else if (slots[selected].respawn_at == 0) {
       target = selected;
@@ -193,10 +135,10 @@ static int update(const input_t *in, uint32_t now) {
   double power = game_team_power();
   if (target >= 0 && power > 0 && dt) {
     result |= hit(power * dt / 1000.0, now);
-    if (!machine_open && (now / 100) != ((now - dt) / 100)) result |= SCREEN_REDRAW_CONTENT;
+    if (!in_machine && (now / 100) != ((now - dt) / 100)) result |= SCREEN_REDRAW_CONTENT;
   }
   if (target < 0 && power > 0) target = next_alive(SLOTS - 1); /* AUTO */
-  if (machine_open) return result;
+  if (machine_is_open()) return result;
   for (int i = 0; i < SLOTS; i++) {
     slot_t *s = &slots[i];
     if (s->respawn_at && (int32_t)(now - s->respawn_at) >= 0) {
@@ -216,23 +158,13 @@ static int update(const input_t *in, uint32_t now) {
   return result;
 }
 
-static void draw_machine_card(int x, int y, bool sel) {
-  bool gold = machine_kind() == VAR_NORMAL;
-  ui_card(x, y, CARD_W, CARD_H, sel, gold ? RGB(255, 240, 180) : RGB(235, 215, 255),
-          gold ? RGB(240, 200, 90) : RGB(190, 160, 240));
-  if (sel) y -= 2;
-  const sprite_t *s = gold ? &spr_machine_gold : &spr_machine_rainbow;
-  gfx_sprite(s, x + (CARD_W - s->width) / 2, y + 4);
-  gfx_text_aligned(&font_small, x, y + 45, CARD_W, ALIGN_CENTER, gold ? "Golden" : "Rainbow", COL_TEXT);
-}
-
 static void draw_slot(int i) {
   const slot_t *s = &slots[i];
   int x = 8 + (i % COLS) * (CARD_W + 8);
   int y = CONTENT_Y + 10 + (i / COLS) * (CARD_H + 8);
   bool sel = i == selected;
   if (is_machine(i)) {
-    draw_machine_card(x, y, sel);
+    machine_draw_card(zone_machine(), x, y, CARD_W, CARD_H, sel);
     return;
   }
   const sprite_t *sprite = sprites[s->type];
@@ -275,47 +207,9 @@ static void draw_slot(int i) {
   }
 }
 
-static void draw_machine(void) {
-  bool gold = machine_kind() == VAR_NORMAL;
-  int x = 8, y = CONTENT_Y + 4, w = 304, h = CONTENT_H - 8;
-  ui_panel(x, y, w, h);
-  gfx_sprite(gold ? &spr_machine_gold : &spr_machine_rainbow, x + 8, y + 6);
-  gfx_text(&font_big, x + 58, y + 8, gold ? "Machine Golden" : "Machine Rainbow", COL_TEXT);
-  gfx_text(&font_small, x + 58, y + 30, gold ? "10 pets identiques → 1 golden" : "10 golden identiques → 1 rainbow",
-           COL_TEXT_DIM);
-  if (!machine_count) {
-    gfx_text_aligned(&font_medium, x, y + 90, w, ALIGN_CENTER,
-                     gold ? "Aucun pet à transformer" : "Aucun pet golden à transformer", COL_TEXT_DIM);
-  }
-  for (int i = machine_scroll * M_COLS; i < machine_count && i < (machine_scroll + M_ROWS) * M_COLS; i++) {
-    int p = machine_list[i] & 0xFF, v = machine_list[i] >> 8;
-    int cx = x + 10 + (i % M_COLS) * 48, cy = y + 52 + (i / M_COLS - machine_scroll) * 40;
-    int have = game_machine_available(p, v);
-    bool ready = have >= MACHINE_INPUT;
-    ui_card(cx, cy, 44, 36, i == machine_sel, ready ? RGB(220, 255, 220) : COL_PANEL_TOP,
-            ready ? RGB(150, 220, 150) : COL_PANEL_BOT);
-    int dy = i == machine_sel ? -2 : 0;
-    ui_pet(p, v, cx + 10, cy + 2 + dy, PET_HALF, clock_ms);
-    char n[16], *q = n;
-    numfmt(have, q);
-    while (*q) q++;
-    for (const char *t = "/10"; (*q++ = *t++);) {}
-    gfx_text_aligned(&font_small, cx, cy + 24 + dy, 44, ALIGN_CENTER, n, ready ? COL_GREEN_DARK : COL_TEXT_DIM);
-  }
-  if (machine_count) {
-    int p = machine_list[machine_sel] & 0xFF, v = machine_list[machine_sel] >> 8;
-    char name[48], line[64], *q = line;
-    ui_pet_name(p, v + 1, name);
-    for (const char *t = "OK : fabriquer "; *t;) *q++ = *t++;
-    for (const char *t = name; *t;) *q++ = *t++;
-    *q = 0;
-    gfx_text_aligned(&font_small, x, y + h - 18, w, ALIGN_CENTER, line, COL_BLUE_DARK);
-  }
-}
-
 static void draw(void) {
-  if (machine_open) {
-    draw_machine();
+  if (machine_is_open()) {
+    machine_draw(clock_ms);
     return;
   }
   for (int i = 0; i < SLOTS; i++) draw_slot(i);

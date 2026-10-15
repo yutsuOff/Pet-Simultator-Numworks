@@ -24,5 +24,9 @@ extern const sprite_t spr_brk_gems;
 extern const sprite_t spr_logo;
 extern const sprite_t spr_machine_gold;
 extern const sprite_t spr_machine_rainbow;
+extern const sprite_t spr_machine_potions;
+extern const sprite_t spr_machine_fuse;
+extern const sprite_t spr_machine_enchants;
+extern const sprite_t spr_machine_daycare;
 
 #endif

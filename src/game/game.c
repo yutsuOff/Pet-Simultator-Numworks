@@ -23,6 +23,7 @@ static const double variant_power[VARIANT_COUNT] = {1.0, 1.13, 1.27, 1.5, 1.5 * 
 const uint32_t huge_odds[VARIANT_COUNT] = {50000, 75000, 125000, 100000, 150000, 175000};
 static const double huge_percent[VARIANT_COUNT] = {200, 225, 275, 250, 300, 325};
 #define REBIRTH_STRENGTH 0.75 /* PS99 Rebirth 1: +75 % pet strength */
+#define REBIRTH_COINS 10      /* game choice: zones 1-37 are played again quickly */
 
 void game_init(void) {
   game = (game_t){0};
@@ -31,6 +32,7 @@ void game_init(void) {
   for (int i = 0; i < MAX_TEAM; i++) game.team[i].pet = NO_PET;
   for (int i = 0; i < MAX_ENCHANT_SLOTS; i++) game.enchant_slot[i] = NO_ITEM;
   for (int i = 0; i < QUEST_SLOTS; i++) game.quest_goal[i] = NO_QUEST;
+  for (int i = 0; i < DAYCARE_SLOTS; i++) game.daycare[i].pet = NO_PET;
 }
 
 static int level(int id) { return game.upgrade_level[id]; }
@@ -297,9 +299,11 @@ double game_claim_index_rewards(void) {
 
 /* --- Zones and rebirth --- */
 
+bool game_zone_needs_rebirth(int zone) { return zone >= REBIRTH_ZONE && game.rebirths < 1; }
+
 bool game_unlock_next_zone(void) {
   int z = game.zones_unlocked;
-  if (z >= ZONE_COUNT || game.coins < zones[z].cost) return false;
+  if (z >= ZONE_COUNT || game_zone_needs_rebirth(z) || game.coins < zones[z].cost) return false;
   game.coins -= zones[z].cost;
   game.zones_unlocked++;
   game.zone = (uint8_t)z;
@@ -307,7 +311,7 @@ bool game_unlock_next_zone(void) {
   return true;
 }
 
-bool game_can_rebirth(void) { return game.zones_unlocked == ZONE_COUNT && game.rebirths < MAX_REBIRTH; }
+bool game_can_rebirth(void) { return game.zones_unlocked >= REBIRTH_ZONE && game.rebirths < MAX_REBIRTH; }
 
 void game_rebirth(void) {
   if (!game_can_rebirth()) return;
@@ -336,7 +340,8 @@ bool game_buy_upgrade(int id) {
 
 double game_coin_bonus(void) {
   double boosts = 1 + (game_boost_percent(POTION_COINS) + game_enchant_percent(ENCHANT_COINS)) / 100;
-  return (1 + 0.1 * level(UPG_COINS)) * (1 + 0.05 * (game_discovered_count() / INDEX_STEP)) * boosts;
+  return (1 + 0.1 * level(UPG_COINS)) * (1 + 0.05 * (game_discovered_count() / INDEX_STEP)) * boosts *
+         (game.rebirths ? REBIRTH_COINS : 1);
 }
 
 double game_diamond_bonus(void) {
