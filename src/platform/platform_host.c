@@ -97,7 +97,7 @@ static uint64_t key_for_token(const char *t) {
   static const struct { const char *name; int key; } names[] = {
     {"L", KEY_LEFT}, {"R", KEY_RIGHT}, {"U", KEY_UP}, {"D", KEY_DOWN},
     {"OK", KEY_OK}, {"EXE", KEY_EXE}, {"BACK", KEY_BACK}, {"HOME", KEY_HOME},
-    {"SHIFT", KEY_SHIFT}, {"TOOLBOX", KEY_TOOLBOX},
+    {"SHIFT", KEY_SHIFT}, {"TOOLBOX", KEY_TOOLBOX}, {"BACKSPACE", KEY_BACKSPACE},
     {"0", KEY_0}, {"1", KEY_1}, {"2", KEY_2}, {"3", KEY_3}, {"4", KEY_4},
     {"5", KEY_5}, {"6", KEY_6}, {"7", KEY_7}, {"8", KEY_8}, {"9", KEY_9},
   };

@@ -76,7 +76,7 @@ avec Home) dans un script **`petsim.py`**, visible dans l'app Python. L'écran t
 | Pets : OK / Effacer / Toolbox | équiper un exemplaire / en retirer un / équiper les meilleurs |
 | Pets : ↑ depuis la 1re ligne | barre d'outils (←/→ choisir, OK appliquer) |
 | Amélio. : ←/→, ↑/↓, OK | catégorie, amélioration, acheter le niveau suivant |
-| Objets : OK / Toolbox | boire la potion ou (dés)équiper l'enchant / passer Potions ↔ Enchants |
+| Objets : OK / Effacer / Toolbox | boire la potion ou équiper un exemplaire de l'enchant / retirer un exemplaire / passer Potions ↔ Enchants |
 | Farm, zones 7 et 14 : OK sur la machine | ouvrir la machine Golden / Rainbow |
 | 2 8 1 2 ↑ ↑ ↓ ↓ ← → ← → OK | menu admin caché (coins, diamants, zones, Huges, objets, quêtes…) |
 | Œufs : OK (pendant l'animation) | passer l'animation, puis rouvrir le même œuf |

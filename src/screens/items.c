@@ -31,16 +31,11 @@ static int press(uint32_t now) {
     else ui_message("Potion activée !", now);
     return SCREEN_REDRAW_ALL;
   }
-  if (game_enchant_equipped(i)) {
-    for (int s = game_enchant_slots() - 1; s >= 0; s--) {
-      if (game.enchant_slot[s] == i) {
-        game_unequip_enchant(s);
-        break;
-      }
-    }
-    ui_message("Enchant retiré", now);
-  } else if (!game.enchants_owned[i]) {
+  /* OK equips one more copy (several copies of the same enchant can be equipped) */
+  if (!game.enchants_owned[i]) {
     ui_message("Tu n'as pas cet enchant", now);
+  } else if (game_enchant_equipped(i) >= game.enchants_owned[i]) {
+    ui_message("Tous tes exemplaires sont équipés", now);
   } else if (!game_equip_enchant(i)) {
     /* next slot at ranks 3, 5, 8, 11 (PS99) */
     static const int next_rank[MAX_ENCHANT_SLOTS] = {3, 5, 8, 11, 0};
@@ -59,6 +54,19 @@ static int press(uint32_t now) {
     ui_message("Enchant équipé !", now);
   }
   return SCREEN_REDRAW_CONTENT;
+}
+
+/* Effacer: removes one equipped copy of the selected enchant. */
+static int unequip(uint32_t now) {
+  int i = item_index();
+  for (int s = game_enchant_slots() - 1; s >= 0; s--) {
+    if (game.enchant_slot[s] == i) {
+      game_unequip_enchant(s);
+      ui_message("Enchant retiré", now);
+      return SCREEN_REDRAW_CONTENT;
+    }
+  }
+  return 0;
 }
 
 static int update(const input_t *in, uint32_t now) {
@@ -88,6 +96,7 @@ static int update(const input_t *in, uint32_t now) {
   if (input_pressed(in, KEY_RIGHT) && sel_tier < 2) sel_tier++, r |= SCREEN_REDRAW_CONTENT;
   if (input_pressed(in, KEY_TOOLBOX)) enchant_tab = !enchant_tab, sel_type = 0, r |= SCREEN_REDRAW_CONTENT;
   if (input_pressed(in, KEY_OK) || input_pressed(in, KEY_EXE)) r |= press(now);
+  if (enchant_tab && input_pressed(in, KEY_BACKSPACE)) r |= unequip(now);
   return r;
 }
 
@@ -182,8 +191,16 @@ static void draw_panel(void) {
   }
   *q = 0;
   gfx_text_aligned(&font_small, x, y + 77, w, ALIGN_CENTER, buf, COL_TEXT_DIM);
-  q = put(buf, "Possédés : ");
-  numfmt(enchant_tab ? game.enchants_owned[i] : game.potions_owned[i], q);
+  if (enchant_tab) { /* "Équipés : 2/5" */
+    q = put(buf, "Équipés : ");
+    numfmt(game_enchant_equipped(i), q);
+    while (*q) q++;
+    *q++ = '/';
+    numfmt(game.enchants_owned[i], q);
+  } else {
+    q = put(buf, "Possédés : ");
+    numfmt(game.potions_owned[i], q);
+  }
   gfx_text_aligned(&font_small, x, y + 92, w, ALIGN_CENTER, buf, COL_TEXT);
   gfx_fill_rect(x + 8, y + 108, w - 16, 1, RGB(200, 210, 230));
   if (enchant_tab) {
@@ -201,7 +218,7 @@ static void draw_panel(void) {
       }
     }
     gfx_text_aligned(&font_small, x, y + h - 18, w, ALIGN_CENTER,
-                     game_enchant_equipped(i) ? "OK : retirer" : "OK : équiper", COL_BLUE_DARK);
+                     "OK : +1  ·  Effacer : -1", COL_BLUE_DARK);
   } else {
     int t = sel_type;
     if (game.boost_tier[t]) {
