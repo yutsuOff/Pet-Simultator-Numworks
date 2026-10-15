@@ -4,6 +4,7 @@
 #include "input/input.h"
 #include "platform/platform.h"
 #include "save/save.h"
+#include "screens/admin.h"
 #include "screens/screens.h"
 #include "ui/ui.h"
 
@@ -152,7 +153,8 @@ static void draw_title(void) {
 static void draw_game(void) {
   const zone_t *z = &zones[game.zone];
   ui_background(z->sky_top, z->sky_bottom);
-  screens[current]->draw();
+  if (admin_is_open()) admin_draw();
+  else screens[current]->draw();
   ui_message_draw();
   ui_top_bar(z->name, z->accent, game.coins, game.diamonds);
   /* active potions, after the zone badge */
@@ -244,6 +246,23 @@ int app_main(void) {
     uint32_t elapsed = now - last;
     last = now;
     input_update(&in, platform_keys(), now);
+    if (admin_check_code(&in)) { /* the final OK opens the admin menu, nothing else */
+      if (on_title) on_title = false, save_details = false, switch_to(0);
+      gfx_render(draw_game, 0, 240);
+      redraw = 0;
+      if (!platform_end_frame()) break;
+      continue;
+    }
+    if (admin_is_open() && !on_title) {
+      redraw |= admin_update(&in, now);
+      if (ui_message_expired(now)) redraw |= SCREEN_REDRAW_CONTENT;
+      if (redraw & SCREEN_REDRAW_ALL) gfx_render(draw_game, 0, 240);
+      else if (redraw & SCREEN_REDRAW_CONTENT) gfx_render(draw_game, CONTENT_Y, CONTENT_Y + CONTENT_H);
+      redraw = 0;
+      save_tick(now);
+      if (!platform_end_frame()) break;
+      continue;
+    }
     if (input_pressed(&in, KEY_HOME)) break;
     if (on_title) {
       bool blink = (now / 500) % 2 == 0;

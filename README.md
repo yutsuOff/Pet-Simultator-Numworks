@@ -76,6 +76,7 @@ avec Home) dans un script **`petsim.py`**, visible dans l'app Python. L'écran t
 | Amélio. : ←/→, ↑/↓, OK | catégorie, amélioration, acheter le niveau suivant |
 | Objets : OK / Toolbox | boire la potion ou (dés)équiper l'enchant / passer Potions ↔ Enchants |
 | Farm, zones 7 et 14 : OK sur la machine | ouvrir la machine Golden / Rainbow |
+| 2 8 1 2 ↑ ↑ ↓ ↓ ← → ← → OK | menu admin caché (coins, diamants, zones, Huges, objets, quêtes…) |
 | Œufs : OK (pendant l'animation) | passer l'animation, puis rouvrir le même œuf |
 | Œufs, Zones : ←/→ | défiler par page |
 | Home | quitter |
